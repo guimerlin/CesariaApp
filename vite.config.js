@@ -1,10 +1,27 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import path from 'path';
+import { fileURLToPath } from 'url'; // Importa a função necessária
+import tailwindcss from '@tailwindcss/vite';
 
-// https://vite.dev/config/
+// Define __dirname corretamente para Módulos ES
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()
-, tailwindcss()
-  ],
-})
+  plugins: [react(), tailwindcss()],
+  // INÍCIO DA CORREÇÃO: Configuração de alias definitiva
+  resolve: {
+    alias: {
+      // Define o alias '@' para apontar para o diretório 'src'
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
+  // FIM DA CORREÇÃO
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+  },
+  base: './', // Garante que os caminhos funcionem corretamente no Electron
+});
