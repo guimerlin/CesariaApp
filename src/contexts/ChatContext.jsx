@@ -348,8 +348,8 @@ export const ChatProvider = ({ children }) => {
         if (items.length > 0) {
           items.forEach((p) => {
             resultText += `<li>
-                            <b>${p.PRODUTO || 'N/A'}</b> (ID: ${p.CODIGO || 'N/A'}) - Estoque: ${p.ESTOQUEATUAL || 0} - Preço: R$ ${p.PRECOVENDA || 0}
-                        </li>`;
+                                <b>${p.PRODUTO || 'N/A'}</b> (ID: ${p.CODIGO || 'N/A'}) - Estoque: ${p.ESTOQUEATUAL || 0} - Preço: R$ ${p.PRECOVENDA || 0}
+                            </li>`;
           });
         } else {
           resultText += `<li>Nenhum resultado encontrado.</li>`;
@@ -481,24 +481,45 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
+  // **INÍCIO DA CORREÇÃO**
   // Cria notificação urgente
   const createUrgentNotification = async (chatId) => {
-    const usersSnapshot = await get(ref(firebaseDb, `${basePath}/users`));
-    const allUsers = Object.keys(usersSnapshot.val() || {});
     const notificationPayload = { hasUnread: true, from: state.currentUser };
+    const isPrivateChat = chatId.includes('_');
 
-    for (const user of allUsers) {
-      if (user !== state.currentUser) {
+    if (isPrivateChat) {
+      // Se for um chat privado, notifica apenas o outro participante.
+      const participants = chatId.split('_');
+      const recipient = participants.find((p) => p !== state.currentUser);
+
+      if (recipient) {
         await set(
           ref(
             firebaseDb,
-            `${basePath}/unreadUrgentNotifications/${user}/${chatId}`,
+            `${basePath}/unreadUrgentNotifications/${recipient}/${chatId}`,
           ),
           notificationPayload,
         );
       }
+    } else {
+      // Se for um chat de grupo, notifica todos, exceto o remetente.
+      const usersSnapshot = await get(ref(firebaseDb, `${basePath}/users`));
+      const allUsers = Object.keys(usersSnapshot.val() || {});
+
+      for (const user of allUsers) {
+        if (user !== state.currentUser) {
+          await set(
+            ref(
+              firebaseDb,
+              `${basePath}/unreadUrgentNotifications/${user}/${chatId}`,
+            ),
+            notificationPayload,
+          );
+        }
+      }
     }
   };
+  // **FIM DA CORREÇÃO**
 
   // Marca mensagens como lidas
   const markMessagesAsRead = (chatId) => {
