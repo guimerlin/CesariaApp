@@ -10,7 +10,8 @@ import ResultsDisplay from '../components/management/ResultsDisplay.jsx';
 import ConfigModal from '../components/stock/ConfigModal.jsx';
 
 const Management = () => {
-  const { currentUser, db, dbService } = useChat();
+  const { currentUser, db } = useChat();
+  // dbService retirado
   const basePath = 'artifacts/default-app-id/public/data';
 
   // Hooks customizados
@@ -43,7 +44,7 @@ const Management = () => {
     clearResults,
     loadOnlineStores,
     canSearch,
-    hasResults,
+    // hasResults,
   } = useManagementSearch(db, currentUser, basePath);
 
   // Obtém os campos da tabela selecionada

@@ -407,7 +407,30 @@ ipcMain.handle(
               '[ELECTRON] Resultados da consulta de tabela Firebird (Gerenciamento):',
             );
             console.log(result);
-            resolve({ success: true, data: result });
+
+            // =================================================================
+            // INÍCIO DA CORREÇÃO - PROBLEMA DA DATA "N/A"
+            // =================================================================
+            // O processo de comunicação do Electron (IPC) não consegue passar objetos Date
+            // diretamente para a interface. Eles precisam ser convertidos para um formato
+            // de texto, como uma string ISO. A forma mais segura de fazer isso para
+            // todo o resultado é usar JSON.stringify e depois JSON.parse.
+            try {
+              const safeData = JSON.parse(JSON.stringify(result));
+              resolve({ success: true, data: safeData });
+            } catch (e) {
+              console.error(
+                '[ELECTRON] Falha ao serializar os dados do resultado:',
+                e,
+              );
+              resolve({
+                success: false,
+                error: 'Falha ao processar os dados.',
+              });
+            }
+            // =================================================================
+            // FIM DA CORREÇÃO
+            // =================================================================
           });
         });
       });

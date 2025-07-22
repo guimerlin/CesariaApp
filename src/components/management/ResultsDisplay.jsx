@@ -1,19 +1,16 @@
-// components/management/ResultsDisplay.jsx
 import React from 'react';
 
 const ResultsDisplay = ({ searchResults, selectedTable, isLoading }) => {
   /**
-   * Função auxiliar para formatar datas baseada nos dados reais do Firebird
+   * Função auxiliar para formatar datas.
    */
   const formatDate = (dateValue) => {
     if (!dateValue) return 'N/A';
 
-    // Se já for um objeto Date (como vem do Firebird), formata diretamente
     if (dateValue instanceof Date && !isNaN(dateValue)) {
       return dateValue.toLocaleDateString('pt-BR');
     }
 
-    // Se for uma string, tenta fazer o parse
     if (typeof dateValue === 'string') {
       const date = new Date(dateValue);
       if (!isNaN(date.getTime())) {
@@ -25,10 +22,9 @@ const ResultsDisplay = ({ searchResults, selectedTable, isLoading }) => {
   };
 
   /**
-   * Exibe os resultados personalizados para a tabela DADOSPREVENDA
+   * Exibe os resultados personalizados para a tabela DADOSPREVENDA com a lógica de soma corrigida.
    */
   const renderDadosPrevendaResults = (results, storeId) => {
-    // Filtrar resultados para mostrar apenas TIPO === 'PRAZO'
     const filteredResults = results.filter((result) => result.TIPO === 'PRAZO');
 
     const fields = [
@@ -40,59 +36,62 @@ const ResultsDisplay = ({ searchResults, selectedTable, isLoading }) => {
       'CONVENIO',
       'DOCUMENTOCLIENTE',
       'NUMEROCLIENTE',
-      'VALORENTRADA',
     ];
 
     let totalPrazoCliente = 0;
 
-    // Lógica de data para o cálculo do total
+    // =================================================================
+    // INÍCIO DA LÓGICA DE PERÍODO CORRIGIDA
+    // =================================================================
     const hoje = new Date();
     const anoAtual = hoje.getFullYear();
-    const mesAtual = hoje.getMonth(); // 0-11 (Janeiro é 0)
+    const mesAtual = hoje.getMonth(); // 0 para Janeiro, 11 para Dezembro
+    const diaAtual = hoje.getDate();
 
-    // Data de Fim: dia 20 do mês atual, às 00:00:00
-    const dataFim = new Date(anoAtual, mesAtual, 20, 0, 0, 0);
+    let dataInicio;
 
-    // Data de Início: dia 20 do mês ANTERIOR, às 00:00:00
-    let anoInicio = anoAtual;
-    let mesInicio = mesAtual - 1;
-
-    if (mesInicio < 0) {
-      mesInicio = 11;
-      anoInicio -= 1;
+    // Se hoje for dia 20 ou superior, o período começa no dia 20 deste mês.
+    if (diaAtual >= 20) {
+      dataInicio = new Date(anoAtual, mesAtual, 20, 0, 0, 0);
     }
-    const dataInicio = new Date(anoInicio, mesInicio, 20, 0, 0, 0);
+    // Se hoje for antes do dia 20, o período começa no dia 20 do mês anterior.
+    else {
+      let anoInicio = anoAtual;
+      let mesInicio = mesAtual - 1;
 
-    // Calcular o total antes de renderizar
+      // Se o mês atual é Janeiro (0), o anterior é Dezembro (11) do ano passado.
+      if (mesInicio < 0) {
+        mesInicio = 11; // Mês 11 é Dezembro em JavaScript
+        anoInicio -= 1;
+      }
+      dataInicio = new Date(anoInicio, mesInicio, 20, 0, 0, 0);
+    }
+    // =================================================================
+    // FIM DA LÓGICA DE PERÍODO CORRIGIDA
+    // =================================================================
+
+    // Calcular o total com base nas regras
     filteredResults.forEach((result) => {
-      // CANCELADA vem com espaços extras do Firebird, então fazemos trim()
       const cancelada = String(result.CANCELADA || '').trim();
+      const dataVenda = result.DATA ? new Date(result.DATA) : null;
 
       if (
         cancelada !== 'Y' &&
-        result.DATA &&
-        result.DATA instanceof Date &&
-        !isNaN(result.DATA.getTime())
+        dataVenda &&
+        !isNaN(dataVenda.getTime()) &&
+        dataVenda >= dataInicio // A soma é feita para todas as vendas a partir da data de início
       ) {
-        const dataVenda = result.DATA;
-
-        // Comparar se a data da venda está no intervalo desejado
-        if (dataVenda >= dataInicio && dataVenda < dataFim) {
-          // VALORTOTAL já vem como número do Firebird
-          const valorTotal = Number(result.VALORTOTAL) || 0;
-          totalPrazoCliente += valorTotal;
-        }
+        const valorTotal = Number(result.VALORTOTAL) || 0;
+        totalPrazoCliente += valorTotal;
       }
     });
 
     return (
       <div key={storeId} className="mb-6">
-        {/* Cabeçalho da loja */}
         <div className="mt-4 mb-3 text-lg font-bold text-blue-700 first:mt-0">
           Loja: {storeId}
         </div>
 
-        {/* Cabeçalho da tabela */}
         <div
           className="grid min-w-full items-center gap-4 border-b bg-gray-100 p-3 font-bold"
           style={{
@@ -106,7 +105,6 @@ const ResultsDisplay = ({ searchResults, selectedTable, isLoading }) => {
           ))}
         </div>
 
-        {/* Linhas de dados */}
         {filteredResults.length > 0 ? (
           filteredResults.map((result, index) => {
             return (
@@ -118,23 +116,18 @@ const ResultsDisplay = ({ searchResults, selectedTable, isLoading }) => {
                 }}
               >
                 {fields.map((field) => {
-                  let displayValue = result[field] || 'N/A';
+                  let displayValue = result[field] ?? 'N/A';
 
                   if (field === 'DATA') {
                     displayValue = formatDate(result[field]);
                   } else if (
                     field === 'NUMEROCLIENTE' &&
-                    result[field] !== undefined &&
-                    result[field] !== null
+                    result[field] != null
                   ) {
                     displayValue = Number(result[field]).toLocaleString(
                       'pt-BR',
                     );
-                  } else if (
-                    field === 'VALORTOTAL' &&
-                    result[field] !== undefined &&
-                    result[field] !== null
-                  ) {
+                  } else if (field === 'VALORTOTAL' && result[field] != null) {
                     displayValue = Number(result[field]).toLocaleString(
                       'pt-BR',
                       {
@@ -143,7 +136,6 @@ const ResultsDisplay = ({ searchResults, selectedTable, isLoading }) => {
                       },
                     );
                   } else if (field === 'CANCELADA' && result[field]) {
-                    // Remove espaços extras do CANCELADA
                     displayValue = String(result[field]).trim();
                   }
 
@@ -166,7 +158,6 @@ const ResultsDisplay = ({ searchResults, selectedTable, isLoading }) => {
           </p>
         )}
 
-        {/* Rodapé com total */}
         {filteredResults.length > 0 && (
           <div
             className="mt-2 grid min-w-full items-center gap-4 border-t-2 border-gray-300 bg-gray-100 p-3 font-bold"
@@ -176,9 +167,9 @@ const ResultsDisplay = ({ searchResults, selectedTable, isLoading }) => {
           >
             <div
               className="text-right text-sm font-bold"
-              style={{ gridColumn: `1 / ${fields.length - 1}` }}
+              style={{ gridColumn: `1 / span ${fields.length - 1}` }}
             >
-              Total a Prazo (período selecionado):
+              Total a Prazo (a partir de {formatDate(dataInicio)}):
             </div>
             <div className="text-sm font-bold text-green-700">
               {totalPrazoCliente.toLocaleString('pt-BR', {
@@ -212,7 +203,6 @@ const ResultsDisplay = ({ searchResults, selectedTable, isLoading }) => {
     const firstResult = results[0];
     let fields = Object.keys(firstResult).filter((key) => key !== 'storeId');
 
-    // Move o campo NOME para o início se existir
     const nameIndex = fields.indexOf('NOME');
     if (nameIndex > 0) {
       const nameField = fields.splice(nameIndex, 1)[0];
@@ -221,12 +211,10 @@ const ResultsDisplay = ({ searchResults, selectedTable, isLoading }) => {
 
     return (
       <div key={storeId} className="mb-6">
-        {/* Cabeçalho da loja */}
         <div className="mt-4 mb-3 text-lg font-bold text-blue-700 first:mt-0">
           Loja: {storeId}
         </div>
 
-        {/* Cabeçalho da tabela */}
         <div
           className="grid min-w-full items-center gap-4 border-b bg-gray-100 p-3 font-bold"
           style={{
@@ -240,7 +228,6 @@ const ResultsDisplay = ({ searchResults, selectedTable, isLoading }) => {
           ))}
         </div>
 
-        {/* Linhas de dados */}
         {results.map((result, index) => (
           <div
             key={index}
