@@ -32,51 +32,50 @@ const TaskBar = () => {
   }
 
   return (
-    <div className="fixed right-20 bottom-3 left-20 flex h-10 items-center justify-around rounded-full bg-gray-200 px-4 align-middle text-white shadow-md z-40">
+    <div className="fixed right-20 bottom-3 left-20 z-40 flex h-10 items-center justify-around rounded-full bg-gray-200 px-4 align-middle text-white shadow-md">
       <img
-        src="/src/assets/cesariadigital.png"
+        src="../assets/cesariadigital.png"
         alt="TaskBar Icon"
         className="h-6 w-6"
         onError={(e) => {
           e.target.style.display = 'none';
         }}
       />
-      
-      <TaskBarButton 
+
+      <TaskBarButton
         onClick={() => handleNavigation('/')}
         isActive={location.pathname === '/'}
         title="Chat"
       >
-        <Home className="w-6 h-6" />
+        <Home className="h-6 w-6" />
       </TaskBarButton>
-      
-      <TaskBarButton 
+
+      <TaskBarButton
         onClick={() => handleNavigation('/stock')}
         isActive={location.pathname === '/stock'}
         title="Consulta de Estoque"
       >
-        <Search className="w-6 h-6" />
+        <Search className="h-6 w-6" />
       </TaskBarButton>
-      
-      <TaskBarButton 
+
+      <TaskBarButton
         onClick={() => handleNavigation('/management')}
         isActive={location.pathname === '/management'}
         title="Gerenciamento"
       >
-        <Settings className="w-6 h-6" />
+        <Settings className="h-6 w-6" />
       </TaskBarButton>
-      
+
       {/* Botão adicional para futuras funcionalidades */}
-      <TaskBarButton 
+      <TaskBarButton
         onClick={() => console.log('Funcionalidade futura')}
         isActive={false}
         title="Em breve"
       >
-        <CreditCard className="w-6 h-6" />
+        <CreditCard className="h-6 w-6" />
       </TaskBarButton>
     </div>
   );
 };
 
 export default TaskBar;
-

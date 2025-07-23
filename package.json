@@ -1,4 +1,5 @@
 {
+  "homepage": ".",
   "name": "cesaria-app",
   "private": true,
   "version": "1.0.0",
@@ -13,19 +14,8 @@
     "dist": "npm run build && electron-builder"
   },
   "dependencies": {
-    "@tailwindcss/vite": "^4.1.11",
-    "bootstrap-icons": "^1.13.1",
-    "class-variance-authority": "^0.7.1",
     "firebase": "^12.0.0",
-    "lucide-react": "^0.525.0",
-    "node-firebird": "^1.1.9",
-    "radix-ui": "^1.4.2",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "react-router-dom": "^7.7.0",
-    "tailwind-merge": "^3.3.1",
-    "tailwindcss": "^4.1.11",
-    "tone": "^15.1.22"
+    "node-firebird": "^1.1.9"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",
@@ -59,7 +49,7 @@
       "target": [
         "nsis"
       ],
-      "icon": "src/assets/cesaria.ico"
+      "icon": "assets/cesaria.ico"
     },
     "nsis": {
       "oneClick": false,

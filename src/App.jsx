@@ -8,7 +8,7 @@ import Chat from './pages/Chat';
 import Search from './pages/Search';
 import Management from './pages/Management';
 import TaskBar from './components/common/TaskBar';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { HashRouter as Router, Route, Routes } from 'react-router-dom';
 
 const AppContent = () => {
   const {

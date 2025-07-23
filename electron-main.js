@@ -9,10 +9,10 @@ import {
   Tray,
   Menu,
 } from 'electron';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import fs from 'node:fs';
 import Firebird from 'node-firebird';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -110,7 +110,7 @@ function createWindow() {
 
 // --- INÍCIO: FUNÇÃO PARA CRIAR A BANDEJA (TRAY) ---
 function createTray() {
-  const iconPath = path.join(__dirname, 'src', 'assets', 'cesaria.ico');
+  const iconPath = path.join(__dirname, 'assets', 'cesaria.ico');
   tray = new Tray(iconPath);
 
   // Cria o menu de contexto (clique direito) para o ícone da bandeja.
@@ -243,7 +243,7 @@ ipcMain.handle('system-beep', async () => {
 // Handler para carregar dados de áudio
 ipcMain.handle('get-audio-data', async (event, fileName) => {
   try {
-    const audioPath = path.join(__dirname, 'src', 'assets', fileName);
+    const audioPath = path.join(__dirname, 'assets', fileName);
     if (fs.existsSync(audioPath)) {
       const audioBuffer = fs.readFileSync(audioPath);
       return audioBuffer;
