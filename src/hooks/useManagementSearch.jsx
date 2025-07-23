@@ -8,18 +8,22 @@ export const useManagementSearch = (db, currentUser, basePath) => {
   const [isLoading, setIsLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [selectedStore, setSelectedStore] = useState('');
-  const [selectedTable, setSelectedTable] = useState('');
+  const [selectedTable] = useState('CLIENTES'); // Fixado em CLIENTES
   const [selectedField, setSelectedField] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [searchAllStores, setSearchAllStores] = useState(false);
-  
+
   const managementServiceRef = useRef(null);
   const activeListenerRef = useRef(null);
 
   // Inicializa o serviço de gerenciamento
   useEffect(() => {
     if (db && currentUser && basePath) {
-      managementServiceRef.current = new ManagementService(db, currentUser, basePath);
+      managementServiceRef.current = new ManagementService(
+        db,
+        currentUser,
+        basePath,
+      );
     }
   }, [db, currentUser, basePath]);
 
@@ -32,16 +36,16 @@ export const useManagementSearch = (db, currentUser, basePath) => {
     try {
       const stores = await managementServiceRef.current.loadOnlineStores();
       setOnlineStores(stores);
-      
+
       if (stores.length === 0) {
         setStatusMessage('Nenhuma loja online disponível');
         return false;
       }
-      
+
       if (stores.length > 0 && !selectedStore) {
         setSelectedStore(stores[0]);
       }
-      
+
       return true;
     } catch (error) {
       console.error('Erro ao carregar lojas online:', error);
@@ -56,23 +60,24 @@ export const useManagementSearch = (db, currentUser, basePath) => {
   const startListeningForAnswers = useCallback(() => {
     if (!managementServiceRef.current || activeListenerRef.current) return;
 
-    activeListenerRef.current = managementServiceRef.current.listenForTableAnswers((newResults) => {
-      setSearchResults(prevResults => {
-        const updatedResults = { ...prevResults };
-        
-        Object.entries(newResults).forEach(([storeId, items]) => {
-          if (!updatedResults[storeId]) {
-            updatedResults[storeId] = [];
-          }
-          updatedResults[storeId].push(...items);
+    activeListenerRef.current =
+      managementServiceRef.current.listenForTableAnswers((newResults) => {
+        setSearchResults((prevResults) => {
+          const updatedResults = { ...prevResults };
+
+          Object.entries(newResults).forEach(([storeId, items]) => {
+            if (!updatedResults[storeId]) {
+              updatedResults[storeId] = [];
+            }
+            updatedResults[storeId].push(...items);
+          });
+
+          return updatedResults;
         });
-        
-        return updatedResults;
+
+        setIsLoading(false);
+        setStatusMessage('');
       });
-      
-      setIsLoading(false);
-      setStatusMessage('');
-    });
   }, []);
 
   /**
@@ -89,7 +94,12 @@ export const useManagementSearch = (db, currentUser, basePath) => {
    * Executa a pesquisa de tabela
    */
   const executeSearch = useCallback(async () => {
-    if (!managementServiceRef.current || !selectedTable || !selectedField || !searchTerm.trim()) {
+    if (
+      !managementServiceRef.current ||
+      !selectedTable ||
+      !selectedField ||
+      !searchTerm.trim()
+    ) {
       setStatusMessage('Preencha todos os campos obrigatórios');
       return;
     }
@@ -107,12 +117,14 @@ export const useManagementSearch = (db, currentUser, basePath) => {
         }
 
         await managementServiceRef.current.sendMultipleTableRequests(
-          onlineStores, 
-          selectedTable, 
-          selectedField, 
-          searchTerm
+          onlineStores,
+          selectedTable,
+          selectedField,
+          searchTerm,
         );
-        setStatusMessage(`Solicitação enviada para ${onlineStores.length} loja(s) online`);
+        setStatusMessage(
+          `Solicitação enviada para ${onlineStores.length} loja(s) online`,
+        );
       } else {
         if (!selectedStore) {
           setStatusMessage('Selecione uma loja para pesquisar');
@@ -121,10 +133,10 @@ export const useManagementSearch = (db, currentUser, basePath) => {
         }
 
         await managementServiceRef.current.sendTableRequest(
-          selectedStore, 
-          selectedTable, 
-          selectedField, 
-          searchTerm
+          selectedStore,
+          selectedTable,
+          selectedField,
+          searchTerm,
         );
         setStatusMessage(`Solicitação enviada para ${selectedStore}`);
       }
@@ -140,13 +152,21 @@ export const useManagementSearch = (db, currentUser, basePath) => {
           }
         }
       }, 30000);
-
     } catch (error) {
       console.error('Erro ao executar pesquisa:', error);
       setStatusMessage('Erro ao executar pesquisa');
       setIsLoading(false);
     }
-  }, [searchAllStores, selectedStore, selectedTable, selectedField, searchTerm, onlineStores, isLoading, searchResults]);
+  }, [
+    searchAllStores,
+    selectedStore,
+    selectedTable,
+    selectedField,
+    searchTerm,
+    onlineStores,
+    isLoading,
+    searchResults,
+  ]);
 
   /**
    * Limpa os resultados da busca
@@ -156,7 +176,6 @@ export const useManagementSearch = (db, currentUser, basePath) => {
     setStatusMessage('');
     setIsLoading(false);
     setSearchTerm('');
-    setSelectedTable('');
     setSelectedField('');
     setSearchAllStores(false);
   }, []);
@@ -169,9 +188,15 @@ export const useManagementSearch = (db, currentUser, basePath) => {
     const hasTable = selectedTable;
     const hasField = selectedField;
     const hasTerm = searchTerm.trim();
-    
+
     return hasStore && hasTable && hasField && hasTerm;
-  }, [selectedStore, searchAllStores, selectedTable, selectedField, searchTerm]);
+  }, [
+    selectedStore,
+    searchAllStores,
+    selectedTable,
+    selectedField,
+    searchTerm,
+  ]);
 
   // Inicia a escuta quando o componente é montado
   useEffect(() => {
@@ -197,21 +222,19 @@ export const useManagementSearch = (db, currentUser, basePath) => {
     selectedField,
     searchTerm,
     searchAllStores,
-    
+
     // Ações
     setSelectedStore,
-    setSelectedTable,
     setSelectedField,
     setSearchTerm,
     setSearchAllStores,
     executeSearch,
     clearResults,
     loadOnlineStores,
-    
+
     // Utilitários
     canSearch: canSearch(),
     hasResults: Object.keys(searchResults).length > 0,
-    totalStores: onlineStores.length
+    totalStores: onlineStores.length,
   };
 };
-

@@ -1,6 +1,11 @@
 import React from 'react';
 
-const ResultsDisplay = ({ searchResults, selectedTable, isLoading }) => {
+const ResultsDisplay = ({
+  searchResults,
+  selectedTable,
+  isLoading,
+  onClientClick,
+}) => {
   /**
    * Função auxiliar para formatar datas.
    */
@@ -209,6 +214,9 @@ const ResultsDisplay = ({ searchResults, selectedTable, isLoading }) => {
       fields.unshift(nameField);
     }
 
+    // Verifica se é tabela de clientes para adicionar funcionalidade de clique
+    const isClientTable = selectedTable === 'CLIENTES';
+
     return (
       <div key={storeId} className="mb-6">
         <div className="mt-4 mb-3 text-lg font-bold text-blue-700 first:mt-0">
@@ -231,10 +239,18 @@ const ResultsDisplay = ({ searchResults, selectedTable, isLoading }) => {
         {results.map((result, index) => (
           <div
             key={index}
-            className="grid min-w-full items-center gap-4 border-b p-3 hover:bg-gray-50"
+            className={`grid min-w-full items-center gap-4 border-b p-3 ${
+              isClientTable
+                ? 'cursor-pointer transition-colors hover:bg-blue-50'
+                : 'hover:bg-gray-50'
+            }`}
             style={{
               gridTemplateColumns: `repeat(${fields.length}, minmax(150px, 1fr))`,
             }}
+            onClick={
+              isClientTable ? () => onClientClick(result, storeId) : undefined
+            }
+            title={isClientTable ? 'Clique para ver detalhes do cliente' : ''}
           >
             {fields.map((field) => (
               <div

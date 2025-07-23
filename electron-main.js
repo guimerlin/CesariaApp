@@ -28,22 +28,22 @@ let shakeTimeout; // Guarda o timeout para parar o tremor
 
 // --- INÍCIO: BLOQUEIO DE INSTÂNCIA ÚNICA ---
 // Garante que apenas uma instância do aplicativo seja executada.
-const gotTheLock = app.requestSingleInstanceLock();
+// const gotTheLock = app.requestSingleInstanceLock();
 
-if (!gotTheLock) {
-  // Se não conseguir o bloqueio, significa que outra instância já está em execução, então encerramos esta.
-  app.quit();
-} else {
-  // Se for a primeira instância, configuramos um listener para tentativas de abrir uma segunda.
-  app.on('second-instance', (event, commandLine, workingDirectory) => {
-    // Alguém tentou executar uma segunda instância. Devemos focar nossa janela.
-    if (mainWindow) {
-      if (mainWindow.isMinimized()) mainWindow.restore(); // Se estiver minimizada, restaura.
-      if (!mainWindow.isVisible()) mainWindow.show(); // Se estiver invisível (na bandeja), mostra.
-      mainWindow.focus(); // Foca a janela.
-    }
-  });
-}
+// if (!gotTheLock) {
+//   // Se não conseguir o bloqueio, significa que outra instância já está em execução, então encerramos esta.
+//   app.quit();
+// } else {
+//   // Se for a primeira instância, configuramos um listener para tentativas de abrir uma segunda.
+//   app.on('second-instance', (event, commandLine, workingDirectory) => {
+//     // Alguém tentou executar uma segunda instância. Devemos focar nossa janela.
+//     if (mainWindow) {
+//       if (mainWindow.isMinimized()) mainWindow.restore(); // Se estiver minimizada, restaura.
+//       if (!mainWindow.isVisible()) mainWindow.show(); // Se estiver invisível (na bandeja), mostra.
+//       mainWindow.focus(); // Foca a janela.
+//     }
+//   });
+// }
 // --- FIM: BLOQUEIO DE INSTÂNCIA ÚNICA ---
 
 // Função para criar a janela principal

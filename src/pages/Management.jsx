@@ -1,5 +1,5 @@
 // pages/Management.jsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useChat } from '../contexts/ChatContext';
 import { useFirebird } from '../hooks/useFirebird.jsx';
 import { useManagementSearch } from '../hooks/useManagementSearch.jsx';
@@ -7,12 +7,20 @@ import { useTableStructures } from '../hooks/useTableStructures.jsx';
 import SearchControls from '../components/management/SearchControls.jsx';
 import StatusArea from '../components/management/StatusArea.jsx';
 import ResultsDisplay from '../components/management/ResultsDisplay.jsx';
+import ClientDetailsModal from '../components/management/ClientDetailsModal.jsx';
 import ConfigModal from '../components/stock/ConfigModal.jsx';
+import { ManagementService } from '../services/managementService.jsx';
 
 const Management = () => {
   const { currentUser, db } = useChat();
   // dbService retirado
   const basePath = 'artifacts/default-app-id/public/data';
+
+  // Estados para modal de detalhes do cliente
+  const [showClientModal, setShowClientModal] = useState(false);
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [clientDetails, setClientDetails] = useState({});
+  const [isLoadingClientDetails, setIsLoadingClientDetails] = useState(false);
 
   // Hooks customizados
   const {
@@ -36,7 +44,6 @@ const Management = () => {
     searchTerm,
     searchAllStores,
     setSelectedStore,
-    setSelectedTable,
     setSelectedField,
     setSearchTerm,
     setSearchAllStores,
@@ -49,6 +56,48 @@ const Management = () => {
 
   // Obtém os campos da tabela selecionada
   const tableFields = selectedTable ? getTableFields(selectedTable) : [];
+
+  /**
+   * Função para lidar com clique no cliente
+   */
+  const handleClientClick = async (clientData, storeId) => {
+    setSelectedClient({ ...clientData, storeId });
+    setShowClientModal(true);
+    setIsLoadingClientDetails(true);
+    setClientDetails({});
+
+    try {
+      // Cria uma instância do ManagementService para buscar detalhes
+      const managementService = new ManagementService(
+        db,
+        currentUser,
+        basePath,
+      );
+
+      // Busca detalhes do cliente em todas as lojas
+      const searchValue = clientData.NOME || clientData.DOCUMENTOCLIENTE || '';
+      if (searchValue) {
+        await managementService.sendMultipleTableRequests(
+          onlineStores,
+          'DADOSPREVENDA',
+          'NOMECLIENTE',
+          searchValue,
+        );
+      }
+    } catch (error) {
+      console.error('Erro ao buscar detalhes do cliente:', error);
+    }
+  };
+
+  /**
+   * Função para fechar modal de detalhes
+   */
+  const handleCloseClientModal = () => {
+    setShowClientModal(false);
+    setSelectedClient(null);
+    setClientDetails({});
+    setIsLoadingClientDetails(false);
+  };
 
   // Listener para abrir modal de configuração do Firebird
   useEffect(() => {
@@ -64,6 +113,38 @@ const Management = () => {
       };
     }
   }, [setShowConfigModal]);
+
+  // Listener para respostas de detalhes do cliente
+  useEffect(() => {
+    if (!db || !currentUser || !showClientModal) return;
+
+    const managementService = new ManagementService(db, currentUser, basePath);
+
+    const unsubscribe = managementService.listenForTableAnswers(
+      (newResults) => {
+        setClientDetails((prevDetails) => {
+          const updatedDetails = { ...prevDetails };
+
+          Object.entries(newResults).forEach(([storeId, items]) => {
+            if (!updatedDetails[storeId]) {
+              updatedDetails[storeId] = [];
+            }
+            updatedDetails[storeId].push(...items);
+          });
+
+          return updatedDetails;
+        });
+
+        setIsLoadingClientDetails(false);
+      },
+    );
+
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
+  }, [db, currentUser, basePath, showClientModal]);
 
   // Verifica se o usuário está logado
   if (!currentUser) {
@@ -94,15 +175,12 @@ const Management = () => {
         onlineStores={onlineStores}
         selectedStore={selectedStore}
         setSelectedStore={setSelectedStore}
-        selectedTable={selectedTable}
-        setSelectedTable={setSelectedTable}
         selectedField={selectedField}
         setSelectedField={setSelectedField}
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
         searchAllStores={searchAllStores}
         setSearchAllStores={setSearchAllStores}
-        availableTables={availableTables}
         tableFields={tableFields}
         canSearch={canSearch}
         onSearch={executeSearch}
@@ -130,6 +208,16 @@ const Management = () => {
         searchResults={searchResults}
         selectedTable={selectedTable}
         isLoading={isLoading}
+        onClientClick={handleClientClick}
+      />
+
+      {/* Modal de Detalhes do Cliente */}
+      <ClientDetailsModal
+        isVisible={showClientModal}
+        onClose={handleCloseClientModal}
+        clientData={selectedClient}
+        clientDetails={clientDetails}
+        isLoadingDetails={isLoadingClientDetails}
       />
 
       {/* Modal de Configuração do Firebird */}
