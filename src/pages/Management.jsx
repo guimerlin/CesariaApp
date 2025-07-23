@@ -122,20 +122,38 @@ const Management = () => {
 
     const unsubscribe = managementService.listenForTableAnswers(
       (newResults) => {
-        setClientDetails((prevDetails) => {
-          const updatedDetails = { ...prevDetails };
+        // Filtra apenas resultados que são da tabela DADOSPREVENDA para o modal
+        const filteredResults = {};
+        Object.entries(newResults).forEach(([storeId, items]) => {
+          // Verifica se os items têm campos específicos da DADOSPREVENDA
+          const dadosPrevendaItems = items.filter(
+            (item) =>
+              item.hasOwnProperty('NOMECLIENTE') &&
+              item.hasOwnProperty('CONVENIO') &&
+              item.hasOwnProperty('DOCUMENTOCLIENTE'),
+          );
 
-          Object.entries(newResults).forEach(([storeId, items]) => {
-            if (!updatedDetails[storeId]) {
-              updatedDetails[storeId] = [];
-            }
-            updatedDetails[storeId].push(...items);
-          });
-
-          return updatedDetails;
+          if (dadosPrevendaItems.length > 0) {
+            filteredResults[storeId] = dadosPrevendaItems;
+          }
         });
 
-        setIsLoadingClientDetails(false);
+        if (Object.keys(filteredResults).length > 0) {
+          setClientDetails((prevDetails) => {
+            const updatedDetails = { ...prevDetails };
+
+            Object.entries(filteredResults).forEach(([storeId, items]) => {
+              if (!updatedDetails[storeId]) {
+                updatedDetails[storeId] = [];
+              }
+              updatedDetails[storeId].push(...items);
+            });
+
+            return updatedDetails;
+          });
+
+          setIsLoadingClientDetails(false);
+        }
       },
     );
 
