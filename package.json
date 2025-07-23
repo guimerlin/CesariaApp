@@ -74,9 +74,6 @@
       "electron-main.js",
       "electron-preload.js",
       "assets/**/*"
-    ],
-    "dependencies": {
-      "node-firebird": "^1.1.9"
-    }
+    ]
   }
 }
