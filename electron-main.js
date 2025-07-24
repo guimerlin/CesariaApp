@@ -141,17 +141,17 @@ function createWindow() {
   /////////////////////////////////////////// FECHAMENTO DE JANELA ///////////////////////////////////////////
 
   mainWindow.on('close', (event) => {
-    if (!app.isQuitting) {
+    if (!app.isQuitting && !configFile.awaysClose) {
       event.preventDefault();
       mainWindow.hide();
+    } else if (configFile.awaysClose || !configFile.usetray) {
+      app.isQuitting = true;
+      app.quit();
     }
   });
 
   mainWindow.on('closed', () => {
     mainWindow = null;
-    if (!configFile.usetray || configFile.awaysClose) {
-      app.quit();
-    }
   });
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////

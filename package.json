@@ -13,6 +13,8 @@
     "preview": "vite preview",
     "dist": "npm run build && electron-builder"
   },
+  "author": "LGBDS",
+  "license": "ISC",
   "dependencies": {
     "firebase": "^12.0.0",
     "node-firebird": "^1.1.9"
