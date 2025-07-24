@@ -1,4 +1,7 @@
-// electron-main.js - Processo principal do Electron para Cesaria Chat
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////// COMPORTAMENTO DA JANELA DO APP E FUNÇÕES EXPOSTAS DE USO EXTERNO /////////////////
+
+////////// IMPORTAÇÕES
 
 import {
   app,
@@ -9,44 +12,96 @@ import {
   Tray,
   Menu,
 } from 'electron';
+
 import fs from 'node:fs';
 import Firebird from 'node-firebird';
 import path from 'path';
 import { fileURLToPath } from 'url';
+
+///////////////////////
+
+/////////// DEIFIÇÕES DE VARIAVEIS
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const isDev = !app.isPackaged;
 
+const defaultConfigFile = {
+  useAppShake: true,
+  usetray: true,
+  showAppName: true,
+  instanceLock: true,
+  awaysClose: false,
+  shakeIntervalTime: 50,
+  shakeTimeout: null,
+  shakeIntensity: 4,
+  openWithSystem: true,
+};
+
 let mainWindow;
-let tray = null; // Variável para guardar a instância da bandeja
+let tray = null;
 let isShaking = false;
 let shakeInterval;
-let originalPosition; // Guarda a posição original da janela
-let shakeTimeout; // Guarda o timeout para parar o tremor
+let configFile = {};
+let configPath;
+let originalBounds;
 
-// --- INÍCIO: BLOQUEIO DE INSTÂNCIA ÚNICA ---
-// Garante que apenas uma instância do aplicativo seja executada.
-// const gotTheLock = app.requestSingleInstanceLock();
+////////////////////////////////////
 
-// if (!gotTheLock) {
-//   // Se não conseguir o bloqueio, significa que outra instância já está em execução, então encerramos esta.
-//   app.quit();
-// } else {
-//   // Se for a primeira instância, configuramos um listener para tentativas de abrir uma segunda.
-//   app.on('second-instance', (event, commandLine, workingDirectory) => {
-//     // Alguém tentou executar uma segunda instância. Devemos focar nossa janela.
-//     if (mainWindow) {
-//       if (mainWindow.isMinimized()) mainWindow.restore(); // Se estiver minimizada, restaura.
-//       if (!mainWindow.isVisible()) mainWindow.show(); // Se estiver invisível (na bandeja), mostra.
-//       mainWindow.focus(); // Foca a janela.
-//     }
-//   });
-// }
-// --- FIM: BLOQUEIO DE INSTÂNCIA ÚNICA ---
+////////// CARREGA O ARQUIVO DE CONFIGURAÇÕES GLOBAIS
 
-// Função para criar a janela principal
+function loadConfig() {
+  if (isDev) {
+    configPath = path.join(__dirname, 'config.json');
+  } else {
+    configPath = path.join(process.resourcesPath, 'config.json');
+  }
+
+  if (fs.existsSync(configPath)) {
+    try {
+      const data = fs.readFileSync(configPath, 'utf8');
+      if (data) {
+        configFile = JSON.parse(data);
+      } else {
+        console.warn('[CONFIG] Arquivo de configuração vazio. Usando padrão.');
+        configFile = defaultConfigFile;
+      }
+      console.log('[CONFIG] Configurações carregadas:', configFile);
+    } catch (error) {
+      configFile = defaultConfigFile;
+      console.error('[CONFIG] Erro ao carregar configurações:', error);
+    }
+  } else {
+    configFile = defaultConfigFile;
+    console.warn('[CONFIG] Arquivo de configuração não encontrado.');
+  }
+}
+
+loadConfig();
+
+/////////////////////////////////////
+
+////////// BLOQUEIO DE INSTANCIA UNICA
+
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock && configFile.instanceLock) {
+  app.quit();
+} else {
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore(); // RESTAURA DA MINIMIZAÇÃO
+      if (!mainWindow.isVisible()) mainWindow.show(); // MOSTRA A JANELA SE ESTIVER NA BANDEJA
+      mainWindow.focus(); // FOCA A JANELA
+    }
+  });
+}
+
+/////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////// CRIAR JANELA PRINCIPAL //////////////////////////////////////////////
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
@@ -59,12 +114,14 @@ function createWindow() {
       enableRemoteModule: false,
       preload: path.join(__dirname, 'electron-preload.js'),
     },
-    icon: path.join(__dirname, 'src', 'assets', 'cesaria.ico'),
+    icon: path.join(__dirname, 'assets', 'cesaria.ico'),
     show: false,
     titleBarStyle: 'default',
   });
 
-  // mainWindow.setMenu(null);
+  if (!configFile.showDevMenu) {
+    mainWindow.setMenu(null);
+  }
 
   if (isDev) {
     mainWindow.loadURL('http://localhost:5173');
@@ -79,22 +136,25 @@ function createWindow() {
     }
   });
 
-  // --- INÍCIO: MODIFICAÇÃO DO EVENTO DE FECHAMENTO ---
-  // Intercepta o evento de fechar a janela.
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////// FECHAMENTO DE JANELA ///////////////////////////////////////////
+
   mainWindow.on('close', (event) => {
-    // Se a flag 'isQuitting' não for verdadeira, previne o fechamento padrão.
     if (!app.isQuitting) {
       event.preventDefault();
-      // Em vez de fechar, apenas esconde a janela. O app continuará rodando na bandeja.
       mainWindow.hide();
     }
-    // Se 'isQuitting' for true, o evento de fechamento prossegue normalmente.
   });
-  // --- FIM: MODIFICAÇÃO DO EVENTO DE FECHAMENTO ---
 
   mainWindow.on('closed', () => {
     mainWindow = null;
+    if (!configFile.usetray || configFile.awaysClose) {
+      app.quit();
+    }
   });
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////// NAVEGAÇÃO DE PAGINAS ////////////////////////////////////////////
 
   mainWindow.webContents.on('will-navigate', (event, navigationUrl) => {
     const parsedUrl = new URL(navigationUrl);
@@ -108,37 +168,35 @@ function createWindow() {
   });
 }
 
-// --- INÍCIO: FUNÇÃO PARA CRIAR A BANDEJA (TRAY) ---
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////// CONFIGURAÇÕES DA TRAY /////////////////////////////////////////////////
+
 function createTray() {
   const iconPath = path.join(__dirname, 'assets', 'cesaria.ico');
   tray = new Tray(iconPath);
 
-  // Cria o menu de contexto (clique direito) para o ícone da bandeja.
+  // CLIQUE DIREITO
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: 'Abrir Cesaria Chat',
+      label: 'Abrir',
       click: () => {
-        // Mostra a janela principal quando esta opção é clicada.
         mainWindow.show();
       },
     },
     {
       label: 'Sair',
       click: () => {
-        // Define uma flag para indicar que estamos realmente saindo.
         app.isQuitting = true;
-        // Chama o método para sair do aplicativo.
         app.quit();
       },
     },
   ]);
 
-  tray.setToolTip('Cesaria Chat está em execução.');
+  tray.setToolTip('Cesaria App em Execução!');
   tray.setContextMenu(contextMenu);
 
-  // Define o que acontece ao clicar com o botão esquerdo no ícone da bandeja.
+  // CLIQUE ESQUERDO
   tray.on('click', () => {
-    // Alterna a visibilidade da janela.
     if (mainWindow.isVisible()) {
       mainWindow.hide();
     } else {
@@ -146,47 +204,61 @@ function createTray() {
     }
   });
 }
-// --- FIM: FUNÇÃO PARA CRIAR A BANDEJA (TRAY) ---
 
-// Função para fazer a janela tremer (alerta urgente)
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////// TREMOR DA TELA ////////////////////////////////////////////////////
+
 function shakeWindow() {
-  if (!mainWindow || isShaking) return;
+  if (!mainWindow || isShaking || !configFile.useAppShake) return;
 
   isShaking = true;
-  originalPosition = mainWindow.getPosition();
+
+  originalBounds = mainWindow.getBounds(); // LIMITES DE TAMANHO DA JANELA
 
   shakeInterval = setInterval(() => {
-    if (mainWindow) {
-      const offsetX = Math.round(Math.random() * 20 - 10);
-      const offsetY = Math.round(Math.random() * 20 - 10);
-      mainWindow.setPosition(
-        originalPosition[0] + offsetX,
-        originalPosition[1] + offsetY,
+    if (mainWindow && originalBounds) {
+      const offsetX = Math.round(
+        Math.random() * configFile.shakeIntensity * 2 -
+          configFile.shakeIntensity,
       );
-    }
-  }, 50);
+      const offsetY = Math.round(
+        Math.random() * configFile.shakeIntensity * 2 -
+          configFile.shakeIntensity,
+      );
 
-  clearTimeout(shakeTimeout);
+      // Define os novos limites, mantendo a largura e altura originais.
+      // Isso previne qualquer efeito de zoom ou redimensionamento.
+      mainWindow.setBounds({
+        x: originalBounds.x + offsetX,
+        y: originalBounds.y + offsetY,
+        width: originalBounds.width,
+        height: originalBounds.height,
+      });
+    }
+  }, configFile.shakeIntervalTime);
 }
 
-// Função para parar o tremor e restaurar o estado da janela
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////// PARAR TREMOR ////////////////////////////////////////////////////
+
 function stopShaking() {
   if (!isShaking || !mainWindow) return;
 
   isShaking = false;
   clearInterval(shakeInterval);
-  clearTimeout(shakeTimeout);
   shakeInterval = null;
-  shakeTimeout = null;
 
-  if (originalPosition) {
-    mainWindow.setPosition(originalPosition[0], originalPosition[1], true);
-    originalPosition = null;
+  if (originalBounds) {
+    // Restaura os limites originais da janela de forma instantânea.
+    mainWindow.setBounds(originalBounds);
+    originalBounds = null;
   }
   mainWindow.setAlwaysOnTop(false);
 }
 
-// Função para trazer janela para frente e focar
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////// TRAZER PARA FRENTE /////////////////////////////////////////////
+
 function bringToFront() {
   if (mainWindow) {
     if (mainWindow.isMinimized()) mainWindow.restore();
@@ -196,11 +268,32 @@ function bringToFront() {
   }
 }
 
-// Event listeners do Electron
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////// LISTENERS DE EVENTOS DO ELECTRON //////////////////////////////////////////////
+
+//////////////////////////////////////////////////////// QUANDO O APP CARREGAR
+
 app.whenReady().then(() => {
   createWindow();
-  createTray(); // Cria a bandeja assim que o app estiver pronto.
+  if (configFile.usetray) {
+    createTray(); // Cria a bandeja assim que o app estiver pronto.
+  }
+  loadConfig(); // Carrega as configurações globais
+
+  if (!isDev && configFile.openWithSystem) {
+    // FAZ O APP INICIAR COM O SISTEMA
+    app.setLoginItemSettings({
+      openAtLogin: true, // Habilita a inicialização automática
+      path: app.getPath('exe'),
+      args: ['--hidden'],
+    });
+  }
 });
+
+/////////////////////////////////////////////////////// QUANDO FECHA O APP
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -208,18 +301,30 @@ app.on('window-all-closed', () => {
   }
 });
 
+/////////////////////////////////////////////////////// COMPATIBILIDADE COM O MAC
+////////////////// VERIFICA SE A JANELA ESTÁ ATIVA, E CRIA UMA NOVA SE NÃO HOUVER
+
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
   } else {
-    // No macOS, se o app estiver na bandeja e for clicado no dock, reabra a janela.
     mainWindow.show();
   }
 });
 
-// IPC Handlers - Comunicação com o renderer process (sem alterações aqui)
-// ... (todo o seu código de ipcMain.handle permanece o mesmo)
-// Handler para alerta urgente
+/////////////////////////////////////////////////////// FUNÇÕES EXPOSTAS / IPC
+//////////////////////////////////////////////////////////////////////////////
+
+// Expõe Configurações globais.
+
+ipcMain.handle('get-config', async () => {
+  return configFile;
+});
+
+///////////////////////////////////////////////////////////////////////////////
+
+// DISPARA O ALERTA  URGENTE
+
 ipcMain.handle('trigger-urgent-alert', async (event, alertText) => {
   console.log('[ELECTRON] Alerta urgente recebido:', alertText);
   bringToFront();
@@ -227,20 +332,29 @@ ipcMain.handle('trigger-urgent-alert', async (event, alertText) => {
   return { success: true };
 });
 
-// Handler para parar tremor
+///////////////////////////////////////////////////////////////////////////////
+
+// PARA O TREMOR DA TELA
+
 ipcMain.handle('stop-shaking', async () => {
   console.log('[ELECTRON] Parando tremor da janela e restaurando estado.');
   stopShaking();
   return { success: true };
 });
 
-// Handler para beep do sistema
+///////////////////////////////////////////////////////////////////////////////
+
+// TOCA O BEEP DO SISTEMA /// USADO SE O AUDIO NÃO FOR ENCONTRADO
+
 ipcMain.handle('system-beep', async () => {
   shell.beep();
   return { success: true };
 });
 
-// Handler para carregar dados de áudio
+////////////////////////////////////////////////////////////////////////////////
+
+// CARREGA O AUDIO DE NOTIFICAÇÃO
+
 ipcMain.handle('get-audio-data', async (event, fileName) => {
   try {
     const audioPath = path.join(__dirname, 'assets', fileName);
@@ -257,20 +371,21 @@ ipcMain.handle('get-audio-data', async (event, fileName) => {
   }
 });
 
-// Handler para consulta Firebird
+///////////////////////////////////////////////////////////////////////////////////
+
+// FAZ UMA CONSULTA AO BANCO DE DADOS FIREBIRD
+
 ipcMain.handle('query-firebird', async (event, config, searchTerm) => {
   try {
     console.log('[ELECTRON] Consulta Firebird real:', { config, searchTerm });
 
-    // Configuração de conexão com o Firebird
     const options = {
       host: config.host,
       port: parseInt(config.port),
       database: config.database,
       user: config.user,
       password: config.password,
-      lowercase_keys: false, // Mantém as chaves em maiúsculas, como no Firebird
-      // ... outras opções que você possa precisar
+      lowercase_keys: false,
     };
 
     return new Promise((resolve, reject) => {
@@ -281,7 +396,6 @@ ipcMain.handle('query-firebird', async (event, config, searchTerm) => {
         }
 
         // Exemplo de consulta SQL para buscar produtos por nome
-        // Adapte esta query ao seu esquema de banco de dados!
         const sql = `
           SELECT 
             CODIGO,
@@ -296,7 +410,7 @@ ipcMain.handle('query-firebird', async (event, config, searchTerm) => {
         `;
 
         db.query(sql, [searchTerm], function (err, result) {
-          db.detach(); // Sempre desconecte após a query
+          db.detach(); // SEMPRE DESCONECTA APÓS A QUERY
           if (err) {
             console.error('[ELECTRON] Erro ao executar query Firebird:', err);
             return reject({ success: false, error: err.message });
@@ -312,7 +426,10 @@ ipcMain.handle('query-firebird', async (event, config, searchTerm) => {
   }
 });
 
-// Handler para consulta de tabela Firebird
+///////////////////////////////////////////////////////////////////////////////////////
+
+// FAZ CONSULTAS DE TABELA AO BANCO DE DADOS FIREBIRD LOCAL
+
 ipcMain.handle(
   'query-table-firebird',
   async (event, config, tableName, fieldName, searchValue) => {
@@ -408,13 +525,8 @@ ipcMain.handle(
             );
             console.log(result);
 
-            // =================================================================
-            // INÍCIO DA CORREÇÃO - PROBLEMA DA DATA "N/A"
-            // =================================================================
-            // O processo de comunicação do Electron (IPC) não consegue passar objetos Date
-            // diretamente para a interface. Eles precisam ser convertidos para um formato
-            // de texto, como uma string ISO. A forma mais segura de fazer isso para
-            // todo o resultado é usar JSON.stringify e depois JSON.parse.
+            // FORMATAR DATA DOS RESULTADOS
+
             try {
               const safeData = JSON.parse(JSON.stringify(result));
               resolve({ success: true, data: safeData });
@@ -428,9 +540,7 @@ ipcMain.handle(
                 error: 'Falha ao processar os dados.',
               });
             }
-            // =================================================================
-            // FIM DA CORREÇÃO
-            // =================================================================
+            // =========================================================
           });
         });
       });
@@ -444,7 +554,10 @@ ipcMain.handle(
   },
 );
 
-// Handler para abrir janela de estoque
+////////////////////////////////////////////////////////////////////////////////////////
+
+// ABRIR JANELA DE ESTOQUE
+
 ipcMain.handle('open-stock-window', async () => {
   console.log('[ELECTRON] Abrindo janela de estoque');
   if (mainWindow) {
@@ -453,7 +566,7 @@ ipcMain.handle('open-stock-window', async () => {
   return { success: true };
 });
 
-// Handler para abrir janela de gerenciamento
+// ABRIR JANELA DE BUSCA DE CONVENIO
 ipcMain.handle('open-management-window', async () => {
   console.log('[ELECTRON] Abrindo janela de gerenciamento');
   if (mainWindow) {
@@ -462,7 +575,8 @@ ipcMain.handle('open-management-window', async () => {
   return { success: true };
 });
 
-// Handler para mostrar dialog de erro
+// MOSTRAR DIALOGOS DE ERRO NOS LOGS DE CONSOLE
+
 ipcMain.handle('show-error-dialog', async (event, title, content) => {
   const result = await dialog.showMessageBox(mainWindow, {
     type: 'error',
@@ -473,7 +587,8 @@ ipcMain.handle('show-error-dialog', async (event, title, content) => {
   return result;
 });
 
-// Handler para mostrar dialog de confirmação
+// MOSTRAR DIALOGOS DE CONFIRMAÇÃO NOS LOGS DE CONSOLE
+
 ipcMain.handle('show-confirm-dialog', async (event, title, content) => {
   const result = await dialog.showMessageBox(mainWindow, {
     type: 'question',
@@ -486,7 +601,8 @@ ipcMain.handle('show-confirm-dialog', async (event, title, content) => {
   return result.response === 0;
 });
 
-// Tratamento de erros não capturadas
+// TRATAR ERROS NÃO CAPTURADOS
+
 process.on('uncaughtException', (error) => {
   console.error('[ELECTRON] Erro não capturado:', error);
 });
@@ -494,3 +610,6 @@ process.on('uncaughtException', (error) => {
 process.on('unhandledRejection', (reason) => {
   console.error('[ELECTRON] Promise rejeitada não tratada:', reason);
 });
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////

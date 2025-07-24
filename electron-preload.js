@@ -4,6 +4,9 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 // Expõe APIs do Electron para o renderer process de forma segura
 contextBridge.exposeInMainWorld('electronAPI', {
+  // Carrega as configurações globais
+  getConfig: () => ipcRenderer.invoke('get-config'),
+
   // Alertas urgentes
   triggerUrgentAlert: (alertText) =>
     ipcRenderer.invoke('trigger-urgent-alert', alertText),
@@ -47,4 +50,4 @@ contextBridge.exposeInMainWorld('electronAPI', {
 });
 
 // Log para debug
-console.log('[PRELOAD] APIs do Electron expostas com sucesso');
+console.log('[PRELOAD] OK');

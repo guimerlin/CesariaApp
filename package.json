@@ -41,15 +41,19 @@
     "asar": true,
     "extraResources": [
       {
-        "from": "assets",
+        "from": "./assets",
         "to": "assets"
+      },
+      {
+        "from": "./config.json",
+        "to": "config.json"
       }
     ],
     "win": {
       "target": [
         "nsis"
       ],
-      "icon": "assets/cesaria.ico"
+      "icon": "./assets/cesaria.ico"
     },
     "nsis": {
       "oneClick": false,

@@ -1,0 +1,12 @@
+{
+  "useAppShake": true,
+  "usetray": true,
+  "showAppName": true,
+  "instanceLock": false,
+  "awaysClose": false,
+  "shakeIntervalTime": 50,
+  "shakeTimeout": null,
+  "shakeIntensity": 4,
+  "openWithSystem": true,
+  "showDevMenu": true
+}
