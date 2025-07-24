@@ -129,8 +129,7 @@ const Management = () => {
           const dadosPrevendaItems = items.filter(
             (item) =>
               item.hasOwnProperty('NOMECLIENTE') &&
-              item.hasOwnProperty('CONVENIO') &&
-              item.hasOwnProperty('DOCUMENTOCLIENTE'),
+              item.hasOwnProperty('CONVENIO'),
           );
 
           if (dadosPrevendaItems.length > 0) {

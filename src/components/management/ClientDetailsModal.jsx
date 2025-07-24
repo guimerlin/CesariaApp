@@ -330,7 +330,7 @@ const ClientDetailsModal = ({
                       Limite:
                     </label>
                     <p className="font-medium text-gray-800">
-                      {formatCurrency(clientData?.LIMITE)}
+                      {formatCurrency(clientData?.LIMITEDECOMPRA)}
                     </p>
                   </div>
                   <div>
