@@ -37,6 +37,7 @@ const defaultConfigFile = {
   shakeTimeout: null,
   shakeIntensity: 4,
   openWithSystem: true,
+  showDevMenu: false,
 };
 
 let mainWindow;
@@ -87,7 +88,7 @@ loadConfig();
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock && configFile.instanceLock) {
   app.quit();
-} else {
+} else if (configFile.instanceLock) {
   app.on('second-instance', (event, commandLine, workingDirectory) => {
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore(); // RESTAURA DA MINIMIZAÇÃO

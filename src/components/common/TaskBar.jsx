@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import TaskBarButton from './TaskBarButton';
 import { Home, Search, CreditCard, Settings } from 'lucide-react';
+import { useChat } from '../../contexts/ChatContext';
 
 const TaskBar = () => {
-  const [isVisible, setIsVisible] = useState(false);
+  const { isTaskBarVisible, setIsTaskBarVisible } = useChat();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -12,7 +13,7 @@ const TaskBar = () => {
     const handleKeyDown = (event) => {
       if (event.key === 'F1') {
         event.preventDefault();
-        setIsVisible((prevIsVisible) => !prevIsVisible);
+        setIsTaskBarVisible((prevIsTaskBarVisible) => !prevIsTaskBarVisible);
       }
     };
 
@@ -27,7 +28,7 @@ const TaskBar = () => {
     navigate(path);
   };
 
-  if (!isVisible) {
+  if (!isTaskBarVisible) {
     return null;
   }
 

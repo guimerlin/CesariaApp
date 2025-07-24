@@ -8,5 +8,5 @@
   "shakeTimeout": null,
   "shakeIntensity": 4,
   "openWithSystem": true,
-  "showDevMenu": true
+  "showDevMenu": false
 }

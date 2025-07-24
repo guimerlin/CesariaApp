@@ -2,6 +2,7 @@ import React from 'react';
 import { Search, Settings } from 'lucide-react';
 import { Button } from '../ui/button';
 import ChatButton from './ChatButton';
+import { useChat } from '../../contexts/ChatContext';
 
 const ChatList = ({
   users,
@@ -10,8 +11,8 @@ const ChatList = ({
   urgentNotifications,
   currentUser,
   onChatSelect,
-  onOpenManagement,
 }) => {
+  const { setIsTaskBarVisible } = useChat();
   return (
     <div className="flex h-full w-1/4 flex-shrink-0 flex-col border-r border-gray-200 bg-white p-4 shadow-lg">
       <div className="mb-4 flex items-center justify-between">
@@ -20,7 +21,7 @@ const ChatList = ({
           {/* Botão de Consulta de Estoque */}
           {/* Botão de Gerenciamento de Tabelas */}
           <Button
-            onClick={onOpenManagement}
+            onClick={() => setIsTaskBarVisible((prev) => !prev)}
             size="sm"
             className="rounded-full bg-green-500 p-2 text-white transition-colors duration-200 hover:bg-green-600 focus:ring-2 focus:ring-green-400"
             title="Gerenciamento de Tabelas"

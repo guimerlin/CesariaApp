@@ -1,6 +1,12 @@
 // ChatContext.jsx - Contexto para gerenciar estado global do chat
 
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useReducer,
+  useEffect,
+  useState,
+} from 'react';
 import {
   getDatabase,
   ref,
@@ -69,6 +75,9 @@ const initialState = {
 
 export const ChatProvider = ({ children }) => {
   const [state, dispatch] = useReducer(chatReducer, initialState);
+
+  const [isTaskBarVisible, setIsTaskBarVisible] = useState(false);
+
   const basePath = APP_CONFIG.basePath;
   const dbService = new DatabaseService(firebaseDb);
 
@@ -604,6 +613,8 @@ export const ChatProvider = ({ children }) => {
     openManagement,
     updateTypingStatus,
     handleLocalStockQuery,
+    isTaskBarVisible,
+    setIsTaskBarVisible,
     db: firebaseDb,
     dbService,
   };
