@@ -3,7 +3,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import MessageBubble from './MessageBubble';
 
-const ConversationPanel = ({ 
+const ConversationPanel = ({
   isVisible,
   chatName,
   messages,
@@ -12,7 +12,7 @@ const ConversationPanel = ({
   onSendMessage,
   onSendUrgentMessage,
   onReaction,
-  updateTypingStatus
+  updateTypingStatus,
 }) => {
   const [messageText, setMessageText] = useState('');
   const [lastUrgentMessage, setLastUrgentMessage] = useState(null);
@@ -20,7 +20,7 @@ const ConversationPanel = ({
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
@@ -29,11 +29,10 @@ const ConversationPanel = ({
 
   useEffect(() => {
     // Encontra a última mensagem urgente recebida
-    const urgentMessages = messages.filter(msg => 
-      msg.urgent && 
-      (msg.senderName || msg.sender) !== currentUser
+    const urgentMessages = messages.filter(
+      (msg) => msg.urgent && (msg.senderName || msg.sender) !== currentUser,
     );
-    
+
     if (urgentMessages.length > 0) {
       setLastUrgentMessage(urgentMessages[urgentMessages.length - 1]);
     } else {
@@ -49,17 +48,17 @@ const ConversationPanel = ({
     if (updateTypingStatus) {
       if (text.length > 0) {
         updateTypingStatus(true);
-        
+
         // Limpa timeout anterior
         if (typingTimeout) {
           clearTimeout(typingTimeout);
         }
-        
+
         // Define novo timeout para parar de digitar
         const newTimeout = setTimeout(() => {
           updateTypingStatus(false);
         }, 3000);
-        
+
         setTypingTimeout(newTimeout);
       } else {
         updateTypingStatus(false);
@@ -73,7 +72,7 @@ const ConversationPanel = ({
 
   const handleSendMessage = () => {
     const text = messageText.trim();
-    
+
     // Intercepta o comando /stock para consulta local de teste
     if (text.startsWith('/stock ')) {
       const searchTerm = text.substring(7).trim();
@@ -81,7 +80,7 @@ const ConversationPanel = ({
         // Adiciona mensagem do sistema informando que a consulta está sendo processada
         const systemMessage = `Consultando estoque para: "${searchTerm}"...`;
         onSendMessage(systemMessage, false);
-        
+
         // Aqui você pode implementar a lógica de consulta de estoque
         // Por enquanto, apenas simula uma resposta
         setTimeout(() => {
@@ -90,11 +89,12 @@ const ConversationPanel = ({
         }, 1000);
       } else {
         // Adiciona mensagem de erro localmente
-        const errorMessage = 'Por favor, forneça um termo para a busca. Ex: /stock sabonete';
+        const errorMessage =
+          'Por favor, forneça um termo para a busca. Ex: /stock sabonete';
         onSendMessage(errorMessage, false);
       }
       setMessageText('');
-      
+
       // Para o status de digitação
       if (updateTypingStatus) {
         updateTypingStatus(false);
@@ -109,7 +109,7 @@ const ConversationPanel = ({
     if (text) {
       onSendMessage(text);
       setMessageText('');
-      
+
       // Para o status de digitação
       if (updateTypingStatus) {
         updateTypingStatus(false);
@@ -126,7 +126,7 @@ const ConversationPanel = ({
     if (text) {
       onSendUrgentMessage(text);
       setMessageText('');
-      
+
       // Para o status de digitação
       if (updateTypingStatus) {
         updateTypingStatus(false);
@@ -139,7 +139,7 @@ const ConversationPanel = ({
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
@@ -166,9 +166,9 @@ const ConversationPanel = ({
 
   if (!isVisible) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-gray-50 h-full">
+      <div className="flex h-full flex-1 items-center justify-center bg-gray-50">
         <div className="text-center text-gray-500">
-          <h2 className="text-xl font-semibold mb-2">Selecione uma conversa</h2>
+          <h2 className="mb-2 text-xl font-semibold">Selecione uma conversa</h2>
           <p>Escolha um chat na lista à esquerda para começar a conversar</p>
         </div>
       </div>
@@ -176,20 +176,20 @@ const ConversationPanel = ({
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-gray-50 h-full">
+    <div className="flex h-full flex-1 flex-col bg-gray-50">
       {/* Header */}
-      <div className="bg-white p-4 flex items-center justify-between shadow-md flex-shrink-0">
-        <h2 className="text-xl font-bold text-gray-800 flex-1 text-center">
+      <div className="flex flex-shrink-0 items-center justify-between bg-white p-4 shadow-md">
+        <h2 className="flex-1 text-center text-xl font-bold text-gray-800">
           {chatName}
         </h2>
       </div>
 
       {/* Messages Container */}
-      <div className="flex-1 p-4 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto p-4">
         {messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-gray-500">
+          <div className="flex h-full items-center justify-center text-gray-500">
             <div className="text-center">
-              <p className="text-lg mb-2">Nenhuma mensagem ainda</p>
+              <p className="mb-2 text-lg">Nenhuma mensagem ainda</p>
               <p className="text-sm">Seja o primeiro a enviar uma mensagem!</p>
             </div>
           </div>
@@ -198,11 +198,13 @@ const ConversationPanel = ({
             <MessageBubble
               key={message.id || index}
               message={message}
-              isCurrentUser={(message.senderName || message.sender) === currentUser}
+              isCurrentUser={
+                (message.senderName || message.sender) === currentUser
+              }
               showReactions={
-                lastUrgentMessage && 
+                lastUrgentMessage &&
                 lastUrgentMessage.id === message.id &&
-                message.urgent && 
+                message.urgent &&
                 (message.senderName || message.sender) !== currentUser
               }
               onConfirm={() => handleReaction(true)}
@@ -215,20 +217,19 @@ const ConversationPanel = ({
 
       {/* Typing Indicator */}
       {typingUsers.length > 0 && (
-        <div className="text-sm text-gray-500 px-4 py-2 italic">
+        <div className="px-4 py-2 text-sm text-gray-500 italic">
           {typingUsers.length === 1
             ? `${typingUsers[0]} está digitando...`
-            : `${typingUsers.join(', ')} estão digitando...`
-          }
+            : `${typingUsers.join(', ')} estão digitando...`}
         </div>
       )}
 
       {/* Message Input */}
-      <div className="p-4 flex items-center gap-2 bg-white border-t border-gray-200">
+      <div className="flex items-center gap-2 border-t border-gray-200 bg-white p-4">
         <Input
           id="messageInput"
           type="text"
-          placeholder="Digite sua mensagem... (use /stock [produto] para consultar estoque)"
+          placeholder="Digite sua mensagem..."
           value={messageText}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
@@ -237,14 +238,14 @@ const ConversationPanel = ({
         <Button
           onClick={handleSendMessage}
           disabled={!messageText.trim()}
-          className="bg-red-600 hover:bg-red-700 text-white font-semibold transition-colors duration-200 focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+          className="bg-red-600 font-semibold text-white transition-colors duration-200 hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
         >
           Enviar
         </Button>
         <Button
           onClick={handleSendUrgentMessage}
           disabled={!messageText.trim()}
-          className="bg-yellow-400 hover:bg-yellow-500 text-red-900 font-semibold transition-colors duration-200 focus:ring-2 focus:ring-offset-2 focus:ring-yellow-400"
+          className="bg-yellow-400 font-semibold text-red-900 transition-colors duration-200 hover:bg-yellow-500 focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2"
         >
           Urgente
         </Button>
@@ -254,4 +255,3 @@ const ConversationPanel = ({
 };
 
 export default ConversationPanel;
-

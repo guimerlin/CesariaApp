@@ -180,11 +180,9 @@ const Management = () => {
     <div className="container mx-auto min-h-screen p-4">
       {/* Cabeçalho */}
       <div className="mb-6 rounded-lg bg-white p-6 shadow-md">
-        <h1 className="mb-2 text-2xl font-bold text-gray-800">
-          Gerenciamento de Tabelas
-        </h1>
+        <h1 className="mb-2 text-2xl font-bold text-gray-800">CONVENIOS</h1>
         <p className="text-gray-600">
-          Consulte tabelas do Firebird remotamente em diferentes lojas
+          Faça pesquisas por Convenios em todas as lojas.
         </p>
       </div>
 

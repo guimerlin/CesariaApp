@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Settings } from 'lucide-react';
+import { AlignJustify } from 'lucide-react';
 import { Button } from '../ui/button';
 import ChatButton from './ChatButton';
 import { useChat } from '../../contexts/ChatContext';
@@ -18,15 +18,14 @@ const ChatList = ({
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-2xl font-bold text-red-700">Conversas</h2>
         <div className="flex space-x-2">
-          {/* Botão de Consulta de Estoque */}
-          {/* Botão de Gerenciamento de Tabelas */}
+          {/* Botão de Barra de Tarefas */}
           <Button
             onClick={() => setIsTaskBarVisible((prev) => !prev)}
             size="sm"
             className="rounded-full bg-green-500 p-2 text-white transition-colors duration-200 hover:bg-green-600 focus:ring-2 focus:ring-green-400"
             title="Gerenciamento de Tabelas"
           >
-            <Settings className="h-4 w-4" />
+            <AlignJustify className="h-4 w-4" />
           </Button>
         </div>
       </div>
