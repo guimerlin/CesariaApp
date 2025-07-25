@@ -195,12 +195,14 @@ const Search = () => {
                 Limpar Resultados
               </button>
             )}
-            <button
-              onClick={() => setIsConfigModalOpen(true)}
-              className="rounded-lg bg-blue-500 px-4 py-2 text-white transition-colors duration-200 hover:bg-blue-600"
-            >
-              Configurações
-            </button>
+            {isConnected && (
+              <button
+                onClick={() => setIsConfigModalOpen(true)}
+                className="rounded-lg bg-blue-500 px-4 py-2 text-white transition-colors duration-200 hover:bg-blue-600"
+              >
+                Configurações
+              </button>
+            )}
           </div>
 
           {/* Tabela de Resultados */}

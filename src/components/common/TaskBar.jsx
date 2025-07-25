@@ -33,7 +33,7 @@ const TaskBar = () => {
   }
 
   return (
-    <div className="fixed right-20 bottom-3 left-20 z-40 flex h-10 items-center justify-around rounded-full bg-gray-500 px-4 align-middle text-white shadow-md">
+    <div className="fixed right-20 bottom-3 left-20 z-40 flex h-10 items-center justify-around rounded-full bg-gray-700/90 px-4 align-middle text-white shadow-md">
       <TaskBarButton
         onClick={() => handleNavigation('/')}
         isActive={location.pathname === '/'}
@@ -50,13 +50,13 @@ const TaskBar = () => {
         <Search className="h-6 w-6" />
       </TaskBarButton>
 
-      <TaskBarButton
+      {/*<TaskBarButton
         onClick={() => handleNavigation('/management')}
         isActive={location.pathname === '/management'}
         title="Gerenciamento"
       >
         <Settings className="h-6 w-6" />
-      </TaskBarButton>
+      </TaskBarButton>*/}
     </div>
   );
 };

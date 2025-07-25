@@ -8,14 +8,13 @@ import { getDatabase } from 'firebase/database';
  * Esta configuração é compartilhada entre todas as páginas do aplicativo
  */
 const firebaseConfig = {
-  apiKey: 'AIzaSyDY4YBgHM_FyT5Z1-x-DJzfgbPRh-OJozY',
-  authDomain: 'cesariaapp-bf071.firebaseapp.com',
-  databaseURL: 'https://cesariaapp-bf071-default-rtdb.firebaseio.com',
-  projectId: 'cesariaapp-bf071',
-  storageBucket: 'cesariaapp-bf071.firebasestorage.app',
-  messagingSenderId: '522634307136',
-  appId: '1:522634307136:web:c1c217c8c55b57a6c2a1a5',
-  measurementId: 'G-402VDDTB6V',
+  apiKey: 'AIzaSyAySaQdxVmkLmC8NRpMafm_tjg3GI9F1VQ',
+  authDomain: 'appavisos-6f71c.firebaseapp.com',
+  databaseURL: 'https://appavisos-6f71c-default-rtdb.firebaseio.com',
+  projectId: 'appavisos-6f71c',
+  storageBucket: 'appavisos-6f71c.firebasestorage.app',
+  messagingSenderId: '302453354750',
+  appId: '1:302453354750:web:bc1f12a30691ded37f75af',
 };
 
 /**

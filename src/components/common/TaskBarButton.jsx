@@ -10,11 +10,11 @@ const TaskBarButton = ({ onClick, children, isActive = false, title = '' }) => {
   };
 
   return (
-    <button 
-      className={`align-middle rounded-full p-1 transition-colors duration-200 ${
-        isActive 
-          ? 'bg-red-500 text-white' 
-          : 'text-gray-400 hover:bg-gray-300 hover:text-gray-600'
+    <button
+      className={`rounded-full p-1 align-middle opacity-100 transition-colors duration-200 ${
+        isActive
+          ? 'bg-red-500 text-white'
+          : 'text-red-500 hover:bg-gray-300 hover:text-gray-600'
       }`}
       onClick={handleClick}
       title={title}
@@ -25,4 +25,3 @@ const TaskBarButton = ({ onClick, children, isActive = false, title = '' }) => {
 };
 
 export default TaskBarButton;
-

@@ -22,7 +22,7 @@ const ChatList = ({
           <Button
             onClick={() => setIsTaskBarVisible((prev) => !prev)}
             size="sm"
-            className="rounded-full bg-green-500 p-2 text-white transition-colors duration-200 hover:bg-green-600 focus:ring-2 focus:ring-green-400"
+            className="rounded-full bg-red-500 p-2 text-white transition-colors duration-100 hover:bg-red-600"
             title="Gerenciamento de Tabelas"
           >
             <AlignJustify className="h-4 w-4" />
