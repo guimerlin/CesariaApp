@@ -43,6 +43,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('navigate-to', (event, route) => callback(route));
   },
 
+  // Listener para abrir o ConfigModal do Firebird via tray
+  onOpenFirebirdConfig: (callback) => {
+    ipcRenderer.on('onOpenFirebirdConfig', () => callback());
+  },
+
   // Remove listeners
   removeAllListeners: (channel) => {
     ipcRenderer.removeAllListeners(channel);

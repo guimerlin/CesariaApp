@@ -16,12 +16,32 @@ const Search = () => {
   const [isQuantityModalOpen, setIsQuantityModalOpen] = useState(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
 
+  // Debug: Estados locais
+  useEffect(() => {
+    console.debug('[DEBUG] searchTerm:', searchTerm);
+  }, [searchTerm]);
+  useEffect(() => {
+    console.debug('[DEBUG] selectedProduct:', selectedProduct);
+  }, [selectedProduct]);
+  useEffect(() => {
+    console.debug('[DEBUG] isQuantityModalOpen:', isQuantityModalOpen);
+  }, [isQuantityModalOpen]);
+  useEffect(() => {
+    console.debug('[DEBUG] isConfigModalOpen:', isConfigModalOpen);
+  }, [isConfigModalOpen]);
+
   // Hooks do contexto
   const { currentUser, db, dbService } = useChat();
+  useEffect(() => {
+    console.debug('[DEBUG] currentUser:', currentUser);
+    console.debug('[DEBUG] db:', db);
+    console.debug('[DEBUG] dbService:', dbService);
+  }, [currentUser, db, dbService]);
 
   // Configuração do Firebase
   const appId = 'default-app-id';
   const basePath = `artifacts/${appId}/public/data`;
+  console.debug('[DEBUG] appId:', appId, 'basePath:', basePath);
 
   // Hook de busca de estoque
   const {
@@ -39,6 +59,27 @@ const Search = () => {
     getAvailableProducts,
     hasResults,
   } = useStockSearch(db, currentUser, basePath, dbService);
+  useEffect(() => {
+    console.debug('[DEBUG] onlineStores:', onlineStores);
+  }, [onlineStores]);
+  useEffect(() => {
+    console.debug('[DEBUG] searchResults:', searchResults);
+  }, [searchResults]);
+  useEffect(() => {
+    console.debug('[DEBUG] isLoading:', isLoading);
+  }, [isLoading]);
+  useEffect(() => {
+    console.debug('[DEBUG] statusMessage:', statusMessage);
+  }, [statusMessage]);
+  useEffect(() => {
+    console.debug('[DEBUG] selectedStore:', selectedStore);
+  }, [selectedStore]);
+  useEffect(() => {
+    console.debug('[DEBUG] searchAllStores:', searchAllStores);
+  }, [searchAllStores]);
+  useEffect(() => {
+    console.debug('[DEBUG] hasResults:', hasResults);
+  }, [hasResults]);
 
   // Hook do Firebird
   const {
@@ -50,17 +91,38 @@ const Search = () => {
     isLoading: firebirdLoading,
     error: firebirdError,
   } = useFirebird();
+  useEffect(() => {
+    console.debug('[DEBUG] firebirdConfig:', firebirdConfig);
+  }, [firebirdConfig]);
+  useEffect(() => {
+    console.debug('[DEBUG] isConnected:', isConnected);
+  }, [isConnected]);
+  useEffect(() => {
+    console.debug('[DEBUG] firebirdLoading:', firebirdLoading);
+  }, [firebirdLoading]);
+  useEffect(() => {
+    console.debug('[DEBUG] firebirdError:', firebirdError);
+  }, [firebirdError]);
+
+  // Testa a conexão automaticamente ao montar ou quando firebirdConfig mudar
+  useEffect(() => {
+    if (firebirdConfig) {
+      testConnection();
+    }
+  }, [firebirdConfig, testConnection]);
 
   // Handlers para os modais
   const handleRequestItem = useCallback((product) => {
+    console.debug('[DEBUG] handleRequestItem called with:', product);
     setSelectedProduct(product);
     setIsQuantityModalOpen(true);
   }, []);
 
   const handleQuantityConfirm = useCallback(
     async (product, quantity) => {
+      console.debug('[DEBUG] handleQuantityConfirm called with:', product, quantity);
       const success = await requestItem(product, quantity);
-
+      console.debug('[DEBUG] requestItem result:', success);
       if (success) {
         alert(
           `Solicitação de ${quantity} unidade(s) do produto "${product.PRODUTO}" enviada para ${product.storeId}.`,
@@ -74,11 +136,11 @@ const Search = () => {
 
   const handleConfigSave = useCallback(
     async (newConfig) => {
+      console.debug('[DEBUG] handleConfigSave called with:', newConfig);
       updateFirebirdConfig(newConfig);
-
       // Testa a conexão com a nova configuração
       const result = await testConnection();
-
+      console.debug('[DEBUG] testConnection result:', result);
       if (result.success) {
         alert('Configuração do Firebird salva e testada com sucesso!');
       } else {
@@ -93,42 +155,41 @@ const Search = () => {
   // Listener para requisições de tabela do Firebird
   useEffect(() => {
     if (!db || !currentUser) return;
-
     const handleTableRequest = async (requestId, request) => {
-      console.log('[DEBUG] Processando requisição de tabela:', request);
-
+      console.debug('[DEBUG] Processando requisição de tabela:', request);
       try {
         const result = await queryTable(
           request.tableName,
           request.fieldName,
           request.searchValue,
         );
-
         // Aqui você pode implementar o envio da resposta de volta ao Firebase
         // usando o stockService ou dbService
-        console.log('[DEBUG] Resultado da consulta:', result);
+        console.debug('[DEBUG] Resultado da consulta:', result);
       } catch (error) {
         console.error('[DEBUG] Erro ao processar requisição de tabela:', error);
       }
     };
-
     // Implementar listener para requisições de tabela
     // Este código seria similar ao que está no stock.js original
+    console.debug('[DEBUG] Listener de requisições de tabela inicializado');
   }, [db, currentUser, queryTable]);
 
   // Listener para configuração do Firebird via Electron
   useEffect(() => {
     if (window.electronAPI && window.electronAPI.onOpenFirebirdConfig) {
+      console.debug('[DEBUG] Registrando listener para onOpenFirebirdConfig');
       const unsubscribe = window.electronAPI.onOpenFirebirdConfig(() => {
+        console.debug('[DEBUG] Evento onOpenFirebirdConfig recebido');
         setIsConfigModalOpen(true);
       });
-
       return unsubscribe;
     }
   }, []);
 
   // Verifica se o usuário está logado
   if (!currentUser) {
+    console.debug('[DEBUG] Usuário não identificado, exibindo mensagem de erro.');
     return (
       <div className="flex flex-1 items-center justify-center">
         <div className="text-center">
@@ -174,7 +235,7 @@ const Search = () => {
             setSearchTerm={setSearchTerm}
             searchAllStores={searchAllStores}
             setSearchAllStores={setSearchAllStores}
-            onSearch={executeSearch}
+            onSearch={(...args) => { console.debug('[DEBUG] executeSearch called with:', ...args); executeSearch(...args); }}
             isLoading={isLoading}
           />
 
@@ -189,20 +250,13 @@ const Search = () => {
           <div className="mb-4 flex gap-2">
             {hasResults && (
               <button
-                onClick={clearResults}
+                onClick={() => { console.debug('[DEBUG] clearResults called'); clearResults(); }}
                 className="rounded-lg bg-gray-500 px-4 py-2 text-white transition-colors duration-200 hover:bg-gray-600"
               >
                 Limpar Resultados
               </button>
             )}
-            {isConnected && (
-              <button
-                onClick={() => setIsConfigModalOpen(true)}
-                className="rounded-lg bg-blue-500 px-4 py-2 text-white transition-colors duration-200 hover:bg-blue-600"
-              >
-                Configurações
-              </button>
-            )}
+            {/* Botão de Configurações removido da interface principal */}
           </div>
 
           {/* Tabela de Resultados */}
@@ -230,6 +284,7 @@ const Search = () => {
       <QuantityModal
         isOpen={isQuantityModalOpen}
         onClose={() => {
+          console.debug('[DEBUG] QuantityModal onClose called');
           setIsQuantityModalOpen(false);
           setSelectedProduct(null);
         }}
@@ -239,7 +294,10 @@ const Search = () => {
 
       <ConfigModal
         isOpen={isConfigModalOpen}
-        onClose={() => setIsConfigModalOpen(false)}
+        onClose={() => {
+          console.debug('[DEBUG] ConfigModal onClose called');
+          setIsConfigModalOpen(false);
+        }}
         onSave={handleConfigSave}
         config={firebirdConfig}
         isLoading={firebirdLoading}

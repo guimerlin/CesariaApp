@@ -185,6 +185,24 @@ function createTray() {
       },
     },
     {
+      label: 'Configurar Firebird',
+      click: () => {
+        if (mainWindow) {
+          console.log('[TRAY] Abrindo modal de configuração do Firebird via tray.');
+          mainWindow.webContents.send('onOpenFirebirdConfig');
+        }
+      },
+    },
+    {
+      label: 'Opções de Desenvolvedor',
+      click: () => {
+        if (mainWindow) {
+          console.log('[TRAY] Abrindo DevTools via tray.');
+          mainWindow.webContents.openDevTools({ mode: 'detach' });
+        }
+      },
+    },
+    {
       label: 'Sair',
       click: () => {
         app.isQuitting = true;
