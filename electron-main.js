@@ -202,6 +202,7 @@ function createTray() {
       mainWindow.hide();
     } else {
       mainWindow.show();
+      mainWindow.focus(); // <--- Adicione isso!
     }
   });
 }
@@ -266,6 +267,9 @@ function bringToFront() {
     mainWindow.show();
     mainWindow.focus();
     mainWindow.setAlwaysOnTop(true, 'screen-saver');
+    setTimeout(() => {
+      mainWindow.setAlwaysOnTop(false);
+    }, 500); // Remove o alwaysOnTop depois de meio segundo
   }
 }
 
