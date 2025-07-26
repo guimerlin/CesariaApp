@@ -149,32 +149,45 @@ export const useStockSearch = (db, currentUser, basePath, dbService) => {
    */
   const requestItem = useCallback(
     async (productInfo, quantidade) => {
+      console.log('[STOCK SEARCH] requestItem chamado com:', {
+        productInfo,
+        quantidade,
+        hasStockService: !!stockServiceRef.current,
+        hasDbService: !!dbService
+      });
+
       if (!stockServiceRef.current || !productInfo.storeId) {
         console.error('Informações insuficientes para solicitar item');
         return false;
       }
 
       try {
+        console.log('[STOCK SEARCH] Enviando solicitação de item');
         // Envia solicitação de item
         await stockServiceRef.current.sendItemRequest(
           productInfo.storeId,
           productInfo,
           quantidade,
         );
+        console.log('[STOCK SEARCH] Solicitação de item enviada com sucesso');
 
         // Envia mensagem no chat se dbService estiver disponível
         if (dbService) {
+          console.log('[STOCK SEARCH] Enviando mensagem no chat');
           await stockServiceRef.current.sendChatMessage(
             productInfo.storeId,
             productInfo,
             quantidade,
             dbService,
           );
+          console.log('[STOCK SEARCH] Mensagem no chat enviada com sucesso');
+        } else {
+          console.warn('[STOCK SEARCH] dbService não disponível, pulando envio de mensagem');
         }
 
         return true;
       } catch (error) {
-        console.error('Erro ao solicitar item:', error);
+        console.error('[STOCK SEARCH] Erro ao solicitar item:', error);
         return false;
       }
     },

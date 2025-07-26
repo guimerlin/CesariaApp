@@ -4,6 +4,7 @@ import { getFirebirdConfig } from '../utils/firebirdConfig.js';
 export class FirebirdService {
   constructor() {
     this.config = getFirebirdConfig();
+    console.log('[FIREBIRD] Configuração inicial:', this.config);
   }
 
   /**
@@ -23,11 +24,17 @@ export class FirebirdService {
       throw new Error('API do Electron não disponível');
     }
 
+    console.log('[FIREBIRD] Buscando produtos com termo:', searchTerm);
+    console.log('[FIREBIRD] Configuração:', this.config);
+
     try {
       const result = await window.electronAPI.queryFirebird(this.config, searchTerm);
+      console.log('[FIREBIRD] Resultado da busca:', result);
       return result;
     } catch (error) {
-      console.error('Erro ao buscar produtos no Firebird:', error);
+      console.error('[FIREBIRD] Erro ao buscar produtos no Firebird:', error);
+      console.error('[FIREBIRD] Tipo do erro:', typeof error);
+      console.error('[FIREBIRD] Mensagem do erro:', error.message);
       throw error;
     }
   }

@@ -53,24 +53,7 @@ export const useFirebird = () => {
     [config],
   );
 
-  /**
-   * Executa uma consulta genérica
-   */
-  const executeQuery = useCallback(async (_sql, _params = []) => {
-    setIsLoading(true);
-    setError(null);
 
-    try {
-      // Por enquanto, não implementamos consultas genéricas via Electron
-      throw new Error('Use searchProducts para buscar produtos');
-    } catch (err) {
-      const errorMessage = err.message || 'Erro ao executar consulta';
-      setError(errorMessage);
-      return { success: false, error: errorMessage };
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
 
   /**
    * Busca produtos por nome
@@ -182,7 +165,6 @@ export const useFirebird = () => {
     // Ações
     testConnection,
     updateConfig,
-    executeQuery,
     searchProducts,
     getProductByCode,
     queryTable,

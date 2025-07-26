@@ -7,7 +7,7 @@
 const defaultFirebirdConfig = {
     host: "localhost",
     port: 3050,
-    database: "C:\\caminho\\para\\banco.fdb",
+    database: "C:\\Cesaria\\CESARIA.FDB",
     user: "SYSDBA",
     password: "masterkey",
     charset: "UTF8",
@@ -68,7 +68,7 @@ export function getDefaultFirebirdConfig() {
  * @param {string} storeId - ID da loja
  * @returns {Object} Configuração do Firebird para a loja
  */
-export function getFirebirdConfigForStore(storeId) {
+export function getFirebirdConfigForStore(_storeId) {
     // Por enquanto, retorna a configuração padrão
     // Pode ser expandido para suportar configurações específicas por loja
     return getFirebirdConfig();

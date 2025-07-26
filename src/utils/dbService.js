@@ -1,6 +1,6 @@
 // dbService.js - Serviços centralizados para Firebase Realtime Database
 
-import { ref, push, onValue, set, update, serverTimestamp, get, remove, onDisconnect, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+import { ref, push, onValue, set, update, serverTimestamp, get, remove, onDisconnect, runTransaction } from 'firebase/database';
 import { APP_CONFIG } from './firebaseConfig.js';
 
 /**

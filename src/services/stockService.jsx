@@ -132,6 +132,18 @@ export class StockService {
    * Envia mensagem no chat
    */
   async sendChatMessage(targetStore, productInfo, quantidade, dbService) {
+    console.log('[STOCK SERVICE] Enviando mensagem no chat:', {
+      targetStore,
+      productInfo,
+      quantidade,
+      dbService: !!dbService
+    });
+
+    if (!dbService) {
+      console.error('[STOCK SERVICE] dbService não fornecido');
+      return;
+    }
+
     const lojas = [this.currentUser, targetStore].sort();
     const chatId = `${lojas[0]}_${lojas[1]}`;
 
@@ -145,10 +157,18 @@ export class StockService {
       quantidade: quantidade,
     };
 
-    await dbService.sendMessage(chatId, message);
-    await dbService.createUrgentNotification(chatId, this.currentUser, [
-      targetStore,
-    ]);
+    try {
+      console.log('[STOCK SERVICE] Enviando mensagem para chatId:', chatId);
+      await dbService.sendMessage(chatId, message);
+      console.log('[STOCK SERVICE] Mensagem enviada com sucesso');
+      
+      console.log('[STOCK SERVICE] Criando notificação urgente');
+      await dbService.createUrgentNotification(chatId, this.currentUser, [targetStore]);
+      console.log('[STOCK SERVICE] Notificação urgente criada com sucesso');
+    } catch (error) {
+      console.error('[STOCK SERVICE] Erro ao enviar mensagem/notificação:', error);
+      throw error;
+    }
   }
 
   /**
