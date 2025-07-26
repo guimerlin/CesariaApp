@@ -56,13 +56,13 @@ export const useFirebird = () => {
   /**
    * Executa uma consulta genérica
    */
-  const executeQuery = useCallback(async (sql, params = []) => {
+  const executeQuery = useCallback(async (_sql, _params = []) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const result = await firebirdServiceRef.current.executeQuery(sql, params);
-      return { success: true, data: result };
+      // Por enquanto, não implementamos consultas genéricas via Electron
+      throw new Error('Use searchProducts para buscar produtos');
     } catch (err) {
       const errorMessage = err.message || 'Erro ao executar consulta';
       setError(errorMessage);
@@ -137,16 +137,13 @@ export const useFirebird = () => {
   /**
    * Atualiza estoque
    */
-  const updateStock = useCallback(async (codigo, novoEstoque) => {
+  const updateStock = useCallback(async (_codigo, _novoEstoque) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const result = await firebirdServiceRef.current.updateStock(
-        codigo,
-        novoEstoque,
-      );
-      return { success: true, data: result };
+      // Por enquanto, não implementamos UPDATE via Electron
+      throw new Error('Função updateStock não implementada via Electron');
     } catch (err) {
       const errorMessage = err.message || 'Erro ao atualizar estoque';
       setError(errorMessage);

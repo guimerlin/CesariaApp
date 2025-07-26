@@ -13,59 +13,40 @@ export class FirebirdService {
     this.config = { ...this.config, ...newConfig };
   }
 
+
+
   /**
-   * Executa uma consulta no Firebird via Electron API
+   * Consulta produtos por nome ou código
    */
-  async executeQuery(sql, params = []) {
+  async searchProducts(searchTerm) {
     if (!window.electronAPI || !window.electronAPI.queryFirebird) {
       throw new Error('API do Electron não disponível');
     }
 
     try {
-      const result = await window.electronAPI.queryFirebird(this.config, sql, params);
+      const result = await window.electronAPI.queryFirebird(this.config, searchTerm);
       return result;
     } catch (error) {
-      console.error('Erro ao executar consulta no Firebird:', error);
+      console.error('Erro ao buscar produtos no Firebird:', error);
       throw error;
     }
-  }
-
-  /**
-   * Consulta produtos por nome
-   */
-  async searchProducts(searchTerm) {
-    const sql = `
-      SELECT 
-        CODIGO,
-        PRODUTO,
-        ESTOQUEATUAL,
-        PRECOCUSTO,
-        PRECOVENDA
-      FROM PRODUTOS 
-      WHERE UPPER(PRODUTO) CONTAINING UPPER(?)
-      AND ESTOQUEATUAL > 0
-      ORDER BY PRODUTO
-    `;
-    
-    return this.executeQuery(sql, [searchTerm]);
   }
 
   /**
    * Consulta produto por código
    */
   async getProductByCode(codigo) {
-    const sql = `
-      SELECT 
-        CODIGO,
-        PRODUTO,
-        ESTOQUEATUAL,
-        PRECOCUSTO,
-        PRECOVENDA
-      FROM PRODUTOS 
-      WHERE CODIGO = ?
-    `;
-    
-    return this.executeQuery(sql, [codigo]);
+    if (!window.electronAPI || !window.electronAPI.queryFirebird) {
+      throw new Error('API do Electron não disponível');
+    }
+
+    try {
+      const result = await window.electronAPI.queryFirebird(this.config, codigo);
+      return result;
+    } catch (error) {
+      console.error('Erro ao buscar produto por código no Firebird:', error);
+      throw error;
+    }
   }
 
   /**
@@ -93,78 +74,73 @@ export class FirebirdService {
   /**
    * Atualiza estoque de um produto
    */
-  async updateStock(codigo, novoEstoque) {
-    const sql = `
-      UPDATE PRODUTOS 
-      SET ESTOQUEATUAL = ? 
-      WHERE CODIGO = ?
-    `;
-    
-    return this.executeQuery(sql, [novoEstoque, codigo]);
+  async updateStock(_codigo, _novoEstoque) {
+    if (!window.electronAPI || !window.electronAPI.queryFirebird) {
+      throw new Error('API do Electron não disponível');
+    }
+
+    try {
+      // Por enquanto, não implementamos UPDATE via Electron
+      // Esta função seria implementada quando necessário
+      throw new Error('Função updateStock não implementada via Electron');
+    } catch (error) {
+      console.error('Erro ao atualizar estoque no Firebird:', error);
+      throw error;
+    }
   }
 
   /**
    * Insere um novo produto
    */
-  async insertProduct(productData) {
-    const sql = `
-      INSERT INTO PRODUTOS (
-        CODIGO, 
-        PRODUTO, 
-        ESTOQUEATUAL, 
-        PRECOCUSTO, 
-        PRECOVENDA
-      ) VALUES (?, ?, ?, ?, ?)
-    `;
-    
-    const params = [
-      productData.codigo,
-      productData.produto,
-      productData.estoque || 0,
-      productData.precoCusto || 0,
-      productData.precoVenda || 0
-    ];
-    
-    return this.executeQuery(sql, params);
+  async insertProduct(_productData) {
+    if (!window.electronAPI || !window.electronAPI.queryFirebird) {
+      throw new Error('API do Electron não disponível');
+    }
+
+    try {
+      // Por enquanto, não implementamos INSERT via Electron
+      // Esta função seria implementada quando necessário
+      throw new Error('Função insertProduct não implementada via Electron');
+    } catch (error) {
+      console.error('Erro ao inserir produto no Firebird:', error);
+      throw error;
+    }
   }
 
   /**
    * Registra uma movimentação de estoque
    */
-  async registerStockMovement(codigo, quantidade, tipo, observacao = '') {
-    const sql = `
-      INSERT INTO MOVIMENTACAO_ESTOQUE (
-        CODIGO_PRODUTO,
-        QUANTIDADE,
-        TIPO_MOVIMENTO,
-        DATA_MOVIMENTO,
-        OBSERVACAO
-      ) VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)
-    `;
-    
-    return this.executeQuery(sql, [codigo, quantidade, tipo, observacao]);
+  async registerStockMovement(_codigo, _quantidade, _tipo, _observacao = '') {
+    if (!window.electronAPI || !window.electronAPI.queryFirebird) {
+      throw new Error('API do Electron não disponível');
+    }
+
+    try {
+      // Por enquanto, não implementamos INSERT via Electron
+      // Esta função seria implementada quando necessário
+      throw new Error('Função registerStockMovement não implementada via Electron');
+    } catch (error) {
+      console.error('Erro ao registrar movimentação no Firebird:', error);
+      throw error;
+    }
   }
 
   /**
    * Consulta histórico de movimentações
    */
-  async getStockHistory(codigo, limit = 50) {
-    const sql = `
-      SELECT 
-        m.CODIGO_PRODUTO,
-        m.QUANTIDADE,
-        m.TIPO_MOVIMENTO,
-        m.DATA_MOVIMENTO,
-        m.OBSERVACAO,
-        p.PRODUTO
-      FROM MOVIMENTACAO_ESTOQUE m
-      LEFT JOIN PRODUTOS p ON p.CODIGO = m.CODIGO_PRODUTO
-      WHERE m.CODIGO_PRODUTO = ?
-      ORDER BY m.DATA_MOVIMENTO DESC
-      ROWS ?
-    `;
-    
-    return this.executeQuery(sql, [codigo, limit]);
+  async getStockHistory(_codigo, _limit = 50) {
+    if (!window.electronAPI || !window.electronAPI.queryFirebird) {
+      throw new Error('API do Electron não disponível');
+    }
+
+    try {
+      // Por enquanto, não implementamos consultas complexas via Electron
+      // Esta função seria implementada quando necessário
+      throw new Error('Função getStockHistory não implementada via Electron');
+    } catch (error) {
+      console.error('Erro ao consultar histórico no Firebird:', error);
+      throw error;
+    }
   }
 
   /**
@@ -172,7 +148,8 @@ export class FirebirdService {
    */
   async testConnection() {
     try {
-      const result = await this.executeQuery('SELECT 1 FROM RDB$DATABASE');
+      // Testa a conexão fazendo uma busca simples
+      await this.searchProducts('test');
       return { success: true, message: 'Conexão estabelecida com sucesso' };
     } catch (error) {
       return { 
@@ -186,31 +163,36 @@ export class FirebirdService {
    * Obtém informações do banco
    */
   async getDatabaseInfo() {
-    const sql = `
-      SELECT 
-        COUNT(*) as TOTAL_PRODUTOS
-      FROM PRODUTOS
-    `;
-    
-    return this.executeQuery(sql);
+    if (!window.electronAPI || !window.electronAPI.queryFirebird) {
+      throw new Error('API do Electron não disponível');
+    }
+
+    try {
+      // Por enquanto, não implementamos consultas complexas via Electron
+      // Esta função seria implementada quando necessário
+      throw new Error('Função getDatabaseInfo não implementada via Electron');
+    } catch (error) {
+      console.error('Erro ao obter informações do banco:', error);
+      throw error;
+    }
   }
 
   /**
    * Backup de dados (exporta produtos para JSON)
    */
   async exportProducts() {
-    const sql = `
-      SELECT 
-        CODIGO,
-        PRODUTO,
-        ESTOQUEATUAL,
-        PRECOCUSTO,
-        PRECOVENDA
-      FROM PRODUTOS
-      ORDER BY CODIGO
-    `;
-    
-    return this.executeQuery(sql);
+    if (!window.electronAPI || !window.electronAPI.queryFirebird) {
+      throw new Error('API do Electron não disponível');
+    }
+
+    try {
+      // Por enquanto, não implementamos consultas complexas via Electron
+      // Esta função seria implementada quando necessário
+      throw new Error('Função exportProducts não implementada via Electron');
+    } catch (error) {
+      console.error('Erro ao exportar produtos:', error);
+      throw error;
+    }
   }
 }
 

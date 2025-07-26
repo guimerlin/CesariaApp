@@ -418,7 +418,7 @@ ipcMain.handle('query-firebird', async (event, config, searchTerm) => {
           return reject({ success: false, error: err.message });
         }
 
-        // Exemplo de consulta SQL para buscar produtos por nome
+        // Consulta SQL para buscar produtos por nome ou código
         const sql = `
           SELECT 
             CODIGO,
@@ -427,12 +427,12 @@ ipcMain.handle('query-firebird', async (event, config, searchTerm) => {
             PRECOCUSTO,
             PRECOVENDA
           FROM PRODUTOS 
-          WHERE UPPER(PRODUTO) CONTAINING UPPER(?)
+          WHERE (UPPER(PRODUTO) CONTAINING UPPER(?) OR UPPER(CODIGO) CONTAINING UPPER(?))
           AND ESTOQUEATUAL > 0
           ORDER BY PRODUTO
         `;
 
-        db.query(sql, [searchTerm], function (err, result) {
+        db.query(sql, [searchTerm, searchTerm], function (err, result) {
           db.detach(); // SEMPRE DESCONECTA APÓS A QUERY
           if (err) {
             console.error('[ELECTRON] Erro ao executar query Firebird:', err);
