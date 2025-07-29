@@ -10,6 +10,10 @@ const ClientDetailsModal = ({
 }) => {
   const [showPurchaseTable, setShowPurchaseTable] = useState(false);
 
+  // Proteção: sempre garantir que clientDetails é um objeto
+  const safeClientDetails = clientDetails || {};
+  console.log('ClientDetailsModal - clientDetails:', safeClientDetails);
+
   if (!isVisible) return null;
 
   const formatCurrency = (value) => {
@@ -83,7 +87,7 @@ const ClientDetailsModal = ({
    * Renderiza a tabela de compras do cliente no formato planilha
    */
   const renderPurchaseTable = () => {
-    if (!clientDetails || Object.keys(clientDetails).length === 0) {
+    if (!safeClientDetails || Object.keys(safeClientDetails).length === 0) {
       return (
         <div className="py-4 text-center">
           <p className="text-gray-500">
@@ -110,7 +114,7 @@ const ClientDetailsModal = ({
           Tabela de Compras
         </h3>
 
-        {Object.entries(clientDetails).map(([storeId, results]) => {
+        {Object.entries(safeClientDetails).map(([storeId, results]) => {
           const filteredResults = results.filter(
             (result) => result.TIPO === 'PRAZO',
           );
@@ -300,7 +304,7 @@ const ClientDetailsModal = ({
                       Nome do Cliente:
                     </label>
                     <p className="font-medium text-gray-800">
-                      {clientData?.NOME || 'N/A'}
+                      {clientData?.NOMECLIENTE || 'N/A'}
                     </p>
                   </div>
                   <div>
@@ -330,7 +334,7 @@ const ClientDetailsModal = ({
                       Limite:
                     </label>
                     <p className="font-medium text-gray-800">
-                      {formatCurrency(clientData?.LIMITEDECOMPRA)}
+                      {formatCurrency(clientData?.LIMITE)}
                     </p>
                   </div>
                   <div>
@@ -345,7 +349,7 @@ const ClientDetailsModal = ({
               </div>
 
               {/* Detalhes por loja */}
-              {clientDetails && Object.keys(clientDetails).length > 0 ? (
+              {safeClientDetails && Object.keys(safeClientDetails).length > 0 ? (
                 <div>
                   <div className="mb-3 flex items-center justify-between">
                     <h3 className="text-lg font-medium text-gray-800">
@@ -363,7 +367,7 @@ const ClientDetailsModal = ({
 
                   {!showPurchaseTable ? (
                     <div className="space-y-4">
-                      {Object.entries(clientDetails).map(
+                      {Object.entries(safeClientDetails).map(
                         ([storeId, details]) => {
                           const utilizadoTotal = calculateUtilizado(details);
                           const primeiroRegistro = details[0] || {};
@@ -390,7 +394,7 @@ const ClientDetailsModal = ({
                                     Convênio:
                                   </label>
                                   <p className="text-gray-800">
-                                    {primeiroRegistro.CONVENIO || 'N/A'}
+                                    {primeiroRegistro.NOME || 'N/A'}
                                   </p>
                                 </div>
                                 <div>
@@ -398,7 +402,7 @@ const ClientDetailsModal = ({
                                     Documento do Cliente:
                                   </label>
                                   <p className="text-gray-800">
-                                    {primeiroRegistro.DOCUMENTOCLIENTE || 'N/A'}
+                                    {primeiroRegistro.DOCUMENTOCLIENTE || primeiroRegistro.CIC || 'N/A'}
                                   </p>
                                 </div>
                                 <div>
@@ -406,15 +410,15 @@ const ClientDetailsModal = ({
                                     Utilizado:
                                   </label>
                                   <p className="font-medium text-gray-800">
-                                    {formatCurrency(utilizadoTotal)}
+                                    {formatCurrency(primeiroRegistro.TOTALGASTO)}
                                   </p>
                                 </div>
                                 <div>
                                   <label className="block text-sm font-medium text-gray-600">
-                                    Total de Registros:
+                                    Disponivel:
                                   </label>
                                   <p className="text-gray-800">
-                                    {details.length}
+                                    {formatCurrency(primeiroRegistro.DISPONIVEL)}
                                   </p>
                                 </div>
                               </div>

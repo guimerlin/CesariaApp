@@ -455,7 +455,7 @@ ipcMain.handle('query-firebird', async (event, config, searchTerm) => {
 
 ipcMain.handle(
   'query-table-firebird',
-  async (event, config, tableName, fieldName, searchValue) => {
+  async (event, config, tableName, fieldName, searchValue, limitDate = "2025/07/20") => {
     try {
       console.log(
         '[ELECTRON] Executando consulta tabela Firebird real (Gerenciamento):',
@@ -464,6 +464,7 @@ ipcMain.handle(
       console.log('  Tabela:', tableName);
       console.log('  Campo:', fieldName);
       console.log('  Valor:', searchValue);
+      console.log('  Data:', limitDate);
 
       const options = {
         host: config.host,
@@ -496,8 +497,38 @@ ipcMain.handle(
           // Adapte esta lógica ao seu esquema de banco de dados!
           switch (tableName.toUpperCase()) {
             case 'DADOSPREVENDA':
-              sql = `SELECT * FROM DADOSPREVENDA WHERE UPPER(${fieldName}) CONTAINING UPPER(?)`;
-              params = [searchValue];
+              sql = `
+SELECT
+	  D.NOMECLIENTE,
+	  CL.MATRICULA,
+	  CL.BLOQUEIACLIENTE AS BLOQUEIO,
+    SUM(D.VALORTOTAL) AS TOTALGASTO,
+    CL.LIMITEDECOMPRA - SUM(D.VALORTOTAL) AS DISPONIVEL,
+    C.NOME,
+    D.DOCUMENTOCLIENTE,
+    CL.CIC,
+    CL.LIMITEDECOMPRA AS LIMITE
+FROM
+    DADOSPREVENDA D
+LEFT JOIN
+    CONVENIOS C ON D.CONVENIO  = C.CODIGO
+LEFT JOIN
+	  CLIENTES CL ON D.NOMECLIENTE = CL.NOME
+WHERE
+    UPPER(D.NOMECLIENTE) CONTAINING UPPER(?)
+    AND D.DATA > ?
+    AND D.CANCELADA = 'N'
+    AND D.TIPO = 'PRAZO'
+GROUP BY
+	  D.NOMECLIENTE,
+	  C.NOME,
+	  D.DOCUMENTOCLIENTE,
+	  CL.CIC,
+	  CL.LIMITEDECOMPRA,
+	  CL.MATRICULA,
+	  CL.BLOQUEIACLIENTE;
+              `;
+              params = [searchValue, limitDate];
               break;
             case 'CLIENTES':
               sql = `SELECT * FROM CLIENTES WHERE UPPER(${fieldName}) CONTAINING UPPER(?)`;
@@ -541,12 +572,17 @@ ipcMain.handle(
                 '[ELECTRON] Erro ao executar query de tabela Firebird (Gerenciamento):',
               );
               console.error(err);
+              console.debug(sql);
+              console.debug(params);
               return resolve({ success: false, error: err.message });
             }
             console.log(
               '[ELECTRON] Resultados da consulta de tabela Firebird (Gerenciamento):',
             );
             console.log(result);
+            console.debug(sql);
+            console.debug(params);
+
 
             // FORMATAR DATA DOS RESULTADOS
 

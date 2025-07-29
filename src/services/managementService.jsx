@@ -46,6 +46,13 @@ export class ManagementService {
    * Envia requisições para múltiplas lojas
    */
   async sendMultipleTableRequests(stores, tableName, fieldName, searchValue) {
+    console.log('[MANAGEMENT SERVICE] Enviando requisições para múltiplas lojas:', {
+      stores,
+      tableName,
+      fieldName,
+      searchValue
+    });
+    
     const requests = stores.map(store => 
       this.sendTableRequest(store, tableName, fieldName, searchValue)
     );
@@ -58,31 +65,41 @@ export class ManagementService {
   listenForTableAnswers(callback) {
     const answersRef = ref(this.db, `${this.basePath}/tableRequestAnswers/${this.currentUser}`);
     
+    console.log('[MANAGEMENT SERVICE] Iniciando listener para respostas em:', answersRef.toString());
+    
     return onValue(answersRef, (snapshot) => {
       if (!snapshot.exists()) return;
 
       const answers = snapshot.val();
+      console.log('[MANAGEMENT SERVICE] Respostas recebidas:', answers);
+      
       const processedAnswers = {};
 
       Object.entries(answers).forEach(([requestId, answer]) => {
         const storeId = answer.storeId || answer.from || 'Desconhecida';
+        console.log(`[MANAGEMENT SERVICE] Processando resposta de ${storeId}:`, answer);
         
         if (!processedAnswers[storeId]) {
           processedAnswers[storeId] = [];
         }
         
         if (Array.isArray(answer.results)) {
+          console.log(`[MANAGEMENT SERVICE] ${storeId} retornou ${answer.results.length} resultados`);
           processedAnswers[storeId].push(...answer.results.map(item => ({
             ...item,
             storeId: storeId
           })));
         }
         
-        // Remove a resposta do Firebase
-        remove(ref(this.db, `${this.basePath}/tableRequestAnswers/${this.currentUser}/${requestId}`));
+        // Remove a resposta do Firebase após um delay para garantir processamento
+        setTimeout(() => {
+          remove(ref(this.db, `${this.basePath}/tableRequestAnswers/${this.currentUser}/${requestId}`));
+          console.log(`[MANAGEMENT SERVICE] Resposta ${requestId} removida do Firebase`);
+        }, 1000); // 1 segundo de delay
       });
 
       if (Object.keys(processedAnswers).length > 0) {
+        console.log('[MANAGEMENT SERVICE] Chamando callback com resultados processados:', processedAnswers);
         callback(processedAnswers);
       }
     });

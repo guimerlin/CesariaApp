@@ -11,7 +11,7 @@ export const useManagementSearch = (db, currentUser, basePath) => {
   const [selectedTable] = useState('CLIENTES'); // Fixado em CLIENTES
   const [selectedField, setSelectedField] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [searchAllStores, setSearchAllStores] = useState(false);
+  const [searchAllStores, setSearchAllStores] = useState(true);
 
   const managementServiceRef = useRef(null);
   const activeListenerRef = useRef(null);
@@ -62,16 +62,21 @@ export const useManagementSearch = (db, currentUser, basePath) => {
 
     activeListenerRef.current =
       managementServiceRef.current.listenForTableAnswers((newResults) => {
+        console.log('[MANAGEMENT SEARCH] Novos resultados recebidos:', newResults);
+        console.log('[MANAGEMENT SEARCH] Número de lojas com resultados:', Object.keys(newResults).length);
+        
         setSearchResults((prevResults) => {
           const updatedResults = { ...prevResults };
 
           Object.entries(newResults).forEach(([storeId, items]) => {
+            console.log(`[MANAGEMENT SEARCH] Processando loja ${storeId} com ${items.length} itens`);
             if (!updatedResults[storeId]) {
               updatedResults[storeId] = [];
             }
             updatedResults[storeId].push(...items);
           });
 
+          console.log('[MANAGEMENT SEARCH] Resultados atualizados:', updatedResults);
           return updatedResults;
         });
 
@@ -91,16 +96,11 @@ export const useManagementSearch = (db, currentUser, basePath) => {
   }, []);
 
   /**
-   * Executa a pesquisa de tabela
+   * Executa a pesquisa de tabela (agora sempre usando DADOSPREVENDA)
    */
   const executeSearch = useCallback(async () => {
-    if (
-      !managementServiceRef.current ||
-      !selectedTable ||
-      !selectedField ||
-      !searchTerm.trim()
-    ) {
-      setStatusMessage('Preencha todos os campos obrigatórios');
+    if (!managementServiceRef.current || !searchTerm.trim()) {
+      setStatusMessage('Preencha o termo de busca');
       return;
     }
 
@@ -115,11 +115,10 @@ export const useManagementSearch = (db, currentUser, basePath) => {
           setIsLoading(false);
           return;
         }
-
         await managementServiceRef.current.sendMultipleTableRequests(
           onlineStores,
-          selectedTable,
-          selectedField,
+          'DADOSPREVENDA',
+          'NOMECLIENTE', // campo padrão para busca
           searchTerm,
         );
         setStatusMessage(
@@ -131,17 +130,14 @@ export const useManagementSearch = (db, currentUser, basePath) => {
           setIsLoading(false);
           return;
         }
-
         await managementServiceRef.current.sendTableRequest(
           selectedStore,
-          selectedTable,
-          selectedField,
+          'DADOSPREVENDA',
+          'NOMECLIENTE',
           searchTerm,
         );
         setStatusMessage(`Solicitação enviada para ${selectedStore}`);
       }
-
-      // Define timeout para a busca
       setTimeout(() => {
         if (isLoading) {
           setIsLoading(false);
@@ -160,8 +156,6 @@ export const useManagementSearch = (db, currentUser, basePath) => {
   }, [
     searchAllStores,
     selectedStore,
-    selectedTable,
-    selectedField,
     searchTerm,
     onlineStores,
     isLoading,

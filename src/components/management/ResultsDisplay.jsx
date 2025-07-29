@@ -7,36 +7,21 @@ const ResultsDisplay = ({
   onClientClick,
 }) => {
   /**
-   * Função auxiliar para formatar datas.
-   */
-  const formatDate = (dateValue) => {
-    if (!dateValue) return 'N/A';
-
-    if (dateValue instanceof Date && !isNaN(dateValue)) {
-      return dateValue.toLocaleDateString('pt-BR');
-    }
-
-    if (typeof dateValue === 'string') {
-      const date = new Date(dateValue);
-      if (!isNaN(date.getTime())) {
-        return date.toLocaleDateString('pt-BR');
-      }
-    }
-
-    return 'Data Inválida';
-  };
-
-  /**
-   * Exibe os resultados genéricos para outras tabelas
+   * Exibe os resultados da consulta customizada (DADOSPREVENDA)
    */
   const renderGenericResults = (results, storeId) => {
-    // Filtra os resultados para remover aqueles que contêm NOMECLIENTE ou VALORTOTAL
-    const filteredResults = results.filter((result) => {
-      return (
-        !result.hasOwnProperty('NOMECLIENTE') &&
-        !result.hasOwnProperty('VALORTOTAL')
-      );
-    });
+    // Mostra qualquer resultado que tenha pelo menos um dos campos principais
+    const fields = [
+      'NOMECLIENTE',
+      'MATRICULA',
+      'BLOQUEIO',
+      'TOTALGASTO',
+      'LIMITE',
+      'DISPONIVEL',
+    ];
+    const filteredResults = results.filter((result) =>
+      fields.some((field) => result[field] !== undefined && result[field] !== null)
+    );
 
     if (!filteredResults || filteredResults.length === 0) {
       return (
@@ -51,24 +36,11 @@ const ResultsDisplay = ({
       );
     }
 
-    const firstResult = filteredResults[0];
-    let fields = Object.keys(firstResult).filter((key) => key !== 'storeId');
-
-    const nameIndex = fields.indexOf('NOME');
-    if (nameIndex > 0) {
-      const nameField = fields.splice(nameIndex, 1)[0];
-      fields.unshift(nameField);
-    }
-
-    // Verifica se é tabela de clientes para adicionar funcionalidade de clique
-    const isClientTable = selectedTable === 'CLIENTES';
-
     return (
       <div key={storeId} className="mb-6">
         <div className="mt-4 mb-3 text-lg font-bold text-blue-700 first:mt-0">
           Loja: {storeId}
         </div>
-
         <div
           className="grid min-w-full items-center gap-4 border-b bg-gray-100 p-3 font-bold"
           style={{
@@ -81,30 +53,23 @@ const ResultsDisplay = ({
             </div>
           ))}
         </div>
-
         {filteredResults.map((result, index) => (
           <div
             key={index}
-            className={`grid min-w-full items-center gap-4 border-b p-3 ${
-              isClientTable
-                ? 'cursor-pointer transition-colors hover:bg-blue-50'
-                : 'hover:bg-gray-50'
-            }`}
+            className="grid min-w-full items-center gap-4 border-b p-3 hover:bg-blue-50"
             style={{
               gridTemplateColumns: `repeat(${fields.length}, minmax(150px, 1fr))`,
             }}
-            onClick={
-              isClientTable ? () => onClientClick(result, storeId) : undefined
-            }
-            title={isClientTable ? 'Clique para ver detalhes do cliente' : ''}
+            title={'Clique para ver detalhes do cliente'}
+            onClick={() => onClientClick(result, storeId)}
           >
             {fields.map((field) => (
               <div
                 key={field}
                 className="text-sm"
-                title={String(result[field] || '')}
+                title={String(result[field] ?? 'N/A')}
               >
-                {result[field] || 'N/A'}
+                {result[field] ?? 'N/A'}
               </div>
             ))}
           </div>

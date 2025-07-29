@@ -50,13 +50,13 @@ const TaskBar = () => {
         <Search className="h-6 w-6" />
       </TaskBarButton>
 
-      {/*<TaskBarButton
+      <TaskBarButton
         onClick={() => handleNavigation('/management')}
         isActive={location.pathname === '/management'}
         title="Gerenciamento"
       >
         <Settings className="h-6 w-6" />
-      </TaskBarButton>*/}
+      </TaskBarButton>
     </div>
   );
 };

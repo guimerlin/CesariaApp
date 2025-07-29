@@ -19,9 +19,7 @@ const Management = () => {
   // Estados para modal de detalhes do cliente
   const [showClientModal, setShowClientModal] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
-  const [clientDetails, setClientDetails] = useState({});
-  const [isLoadingClientDetails, setIsLoadingClientDetails] = useState(false);
-  const [convenios, setConvenios] = useState({});
+  const [selectedClientData, setSelectedClientData] = useState(null);
 
   // Hooks customizados
   const {
@@ -59,54 +57,24 @@ const Management = () => {
   const tableFields = selectedTable ? getTableFields(selectedTable) : [];
 
   /**
-   * Função para lidar com clique no cliente
+   * Função para lidar com clique no cliente (mostrar detalhes em todas as lojas)
    */
-  const handleClientClick = async (clientData, storeId) => {
-    setSelectedClient({ ...clientData, storeId });
-    setShowClientModal(true);
-    setIsLoadingClientDetails(true);
-    setClientDetails({});
-    setConvenios({}); // Limpa convênios ao abrir
-
-    try {
-      // Cria uma instância do ManagementService para buscar detalhes
-      const managementService = new ManagementService(
-        db,
-        currentUser,
-        basePath,
+  const handleClientClick = (clientData) => {
+    // Identificador do cliente (pode ser NOMECLIENTE ou MATRICULA)
+    const idValue = clientData.MATRICULA || clientData.NOMECLIENTE;
+    if (!idValue) return;
+    // Agrupar todos os registros desse cliente em todas as lojas
+    const grouped = {};
+    Object.entries(searchResults).forEach(([loja, results]) => {
+      grouped[loja] = results.filter(
+        (item) =>
+          (item.MATRICULA && item.MATRICULA === clientData.MATRICULA) ||
+          (item.NOMECLIENTE && item.NOMECLIENTE === clientData.NOMECLIENTE)
       );
-
-      // Busca detalhes do cliente em todas as lojas
-      const searchValue = clientData.NOME || clientData.DOCUMENTOCLIENTE || '';
-      if (searchValue) {
-        await managementService.sendMultipleTableRequests(
-          onlineStores,
-          'DADOSPREVENDA',
-          'NOMECLIENTE',
-          searchValue,
-        );
-      }
-
-      // Dispara buscas na tabela CONVENIOS por CODIGO e NOME
-      if (clientData.CODIGO) {
-        managementService.sendMultipleTableRequests(
-          onlineStores,
-          'CONVENIOS',
-          'CODIGO',
-          clientData.CODIGO,
-        );
-      }
-      if (clientData.NOME) {
-        managementService.sendMultipleTableRequests(
-          onlineStores,
-          'CONVENIOS',
-          'NOME',
-          clientData.NOME,
-        );
-      }
-    } catch (error) {
-      console.error('Erro ao buscar detalhes do cliente:', error);
-    }
+    });
+    setSelectedClient(grouped);
+    setSelectedClientData(clientData);
+    setShowClientModal(true);
   };
 
   /**
@@ -115,8 +83,6 @@ const Management = () => {
   const handleCloseClientModal = () => {
     setShowClientModal(false);
     setSelectedClient(null);
-    setClientDetails({});
-    setIsLoadingClientDetails(false);
   };
 
   // Listener para abrir modal de configuração do Firebird
@@ -134,68 +100,14 @@ const Management = () => {
     }
   }, [setShowConfigModal]);
 
-  // Listener para respostas de detalhes do cliente
+  // Listener para respostas de detalhes do cliente (apenas DADOSPREVENDA)
   useEffect(() => {
     if (!db || !currentUser || !showClientModal) return;
-
     const managementService = new ManagementService(db, currentUser, basePath);
-
-    const unsubscribe = managementService.listenForTableAnswers(
-      (newResults) => {
-        // Filtra apenas resultados que são da tabela DADOSPREVENDA para o modal
-        const filteredResults = {};
-        let conveniosObj = {};
-        Object.entries(newResults).forEach(([storeId, items]) => {
-          // DADOSPREVENDA
-          const dadosPrevendaItems = items.filter(
-            (item) =>
-              Object.prototype.hasOwnProperty.call(item, 'NOMECLIENTE') &&
-              Object.prototype.hasOwnProperty.call(item, 'CONVENIO'),
-          );
-          if (dadosPrevendaItems.length > 0) {
-            filteredResults[storeId] = dadosPrevendaItems;
-          }
-
-          // CONVENIOS
-          const conveniosItems = items.filter(
-            (item) =>
-              Object.prototype.hasOwnProperty.call(item, 'CODIGO') &&
-              Object.prototype.hasOwnProperty.call(item, 'NOME'),
-          );
-          if (conveniosItems.length > 0) {
-            conveniosItems.forEach((conv) => {
-              if (conv.CODIGO && conv.NOME) {
-                conveniosObj[conv.CODIGO] = conv.NOME;
-              }
-            });
-          }
-        });
-
-        if (Object.keys(filteredResults).length > 0) {
-          setClientDetails((prevDetails) => {
-            const updatedDetails = { ...prevDetails };
-            Object.entries(filteredResults).forEach(([storeId, items]) => {
-              if (!updatedDetails[storeId]) {
-                updatedDetails[storeId] = [];
-              }
-              updatedDetails[storeId].push(...items);
-            });
-            return updatedDetails;
-          });
-          setIsLoadingClientDetails(false);
-        }
-        // Atualiza CONVENIOS se houver
-        if (Object.keys(conveniosObj).length > 0) {
-          setConvenios((prev) => ({ ...prev, ...conveniosObj }));
-        }
-      },
-    );
-
-    return () => {
-      if (typeof unsubscribe === 'function') {
-        unsubscribe();
-      }
-    };
+    const unsubscribe = managementService.listenForTableAnswers(() => {
+      // Não faz nada, pois não usamos mais esse listener
+    });
+    return () => unsubscribe && unsubscribe();
   }, [db, currentUser, basePath, showClientModal]);
 
   // Verifica se o usuário está logado
@@ -265,10 +177,9 @@ const Management = () => {
       <ClientDetailsModal
         isVisible={showClientModal}
         onClose={handleCloseClientModal}
-        clientData={selectedClient}
-        clientDetails={clientDetails}
-        isLoadingDetails={isLoadingClientDetails}
-        convenios={convenios}
+        clientDetails={selectedClient}
+        clientData={selectedClientData}
+        isLoadingDetails={false}
       />
 
       {/* Modal de Configuração do Firebird */}

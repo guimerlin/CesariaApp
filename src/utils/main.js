@@ -367,14 +367,13 @@ if (LIMIT_INSTANCES && !gotTheLock) {
                   VALORTOTAL,
                   CANCELADA
                 FROM DADOSPREVENDA 
-                WHERE UPPER(CAST(${fieldName} AS VARCHAR(255))) CONTAINING UPPER(?) 
-                ROWS 100`;
+                WHERE UPPER(CAST(${fieldName} AS VARCHAR(255))) CONTAINING UPPER(?)`;
             } else {
               logToFile(
                 `[DEBUG] Usando query genérica para a tabela: ${tableName}`
               );
               // Query genérica para as outras tabelas
-              sqlQuery = `SELECT * FROM ${tableName} WHERE UPPER(CAST(${fieldName} AS VARCHAR(255))) CONTAINING UPPER(?) ROWS 100`;
+              sqlQuery = `SELECT * FROM ${tableName} WHERE UPPER(CAST(${fieldName} AS VARCHAR(255))) CONTAINING UPPER(?)`;
             }
 
             logToFile(
