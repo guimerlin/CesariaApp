@@ -19,13 +19,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Consultas Firebird
   queryFirebird: (config, searchTerm) =>
     ipcRenderer.invoke('query-firebird', config, searchTerm),
-  queryTableFirebird: (config, tableName, fieldName, searchValue) =>
+  queryTableFirebird: (config, tableName, fieldName, searchValue, limitDate) =>
     ipcRenderer.invoke(
       'query-table-firebird',
       config,
       tableName,
       fieldName,
       searchValue,
+      limitDate,
     ),
 
   // Janelas

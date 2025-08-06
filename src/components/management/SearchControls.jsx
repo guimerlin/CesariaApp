@@ -1,5 +1,7 @@
 // components/management/SearchControls.jsx
+import { set } from 'firebase/database';
 import React from 'react';
+import { useState, useEffect } from 'react';
 
 const SearchControls = ({
   onlineStores,
@@ -11,11 +13,12 @@ const SearchControls = ({
   setSearchTerm,
   searchAllStores,
   setSearchAllStores,
-  tableFields,
   canSearch,
   onSearch,
   onClear,
   onRefreshStores,
+  setSelectedConvenio,
+  selectedConvenio
 }) => {
   // Tabela CLIENTES está fixada, não precisa mais do handleTableChange
 
@@ -24,6 +27,19 @@ const SearchControls = ({
       onSearch();
     }
   };
+
+  const [convenios, setConvenios] = useState()
+  const [selectedCName, setSelectedCName] = useState()
+
+  useEffect(() => {
+    if (convenios) return;
+    window.electronAPI.getConfig().then((config) => {
+      console.log('Config:', config.convenios);
+    setConvenios(config.convenios);
+    console.log('Convenios:', convenios);
+  })});
+
+
 
   return (
     <div className="mb-6 rounded-lg bg-white p-6 shadow-md">
@@ -62,18 +78,21 @@ const SearchControls = ({
             htmlFor="searchField"
             className="mb-2 block text-sm font-medium text-gray-700"
           >
-            Campo de Pesquisa:
+            Convênio:
           </label>
           <select
             id="searchField"
-            value={selectedField}
-            onChange={(e) => setSelectedField(e.target.value)}
+            value={selectedCName}
+            onChange={(e) => {
+              setSelectedConvenio(e.target.value);
+            setSelectedCName(e.target.key);
+            }}
             className="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
           >
-            <option value="">Selecione um campo</option>
-            {tableFields.map((field) => (
-              <option key={field} value={field}>
-                {field}
+            <option value="">Selecione um convênio</option>
+            {convenios && Object.entries(convenios).map(([nome, codigo]) => (
+              <option key={nome} value={codigo}>
+                {nome}
               </option>
             ))}
           </select>

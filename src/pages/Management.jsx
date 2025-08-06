@@ -50,6 +50,8 @@ const Management = () => {
     clearResults,
     loadOnlineStores,
     canSearch,
+    setSelectedConvenio,
+    selectedConvenio,
     // hasResults,
   } = useManagementSearch(db, currentUser, basePath);
 
@@ -148,6 +150,8 @@ const Management = () => {
         onSearch={executeSearch}
         onClear={clearResults}
         onRefreshStores={loadOnlineStores}
+        setSelectedConvenio={setSelectedConvenio}
+        selectedConvenio={selectedConvenio}
       />
 
       {/* Área de Status */}
@@ -180,6 +184,10 @@ const Management = () => {
         clientDetails={selectedClient}
         clientData={selectedClientData}
         isLoadingDetails={false}
+        db={db}
+        currentUser={currentUser}
+        basePath={basePath}
+        onlineStores={onlineStores}
       />
 
       {/* Modal de Configuração do Firebird */}

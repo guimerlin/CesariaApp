@@ -1,4 +1,5 @@
-// services/managementService.jsx
+// SERVIÇO RESPONSAVEL POR ENVIAR E RECEBER REQUISIÇÔES DE TABELAS, COMO PRODUTOS, DADOSPREVENDA, CONVENIOS E ETC.
+
 import { ref, onValue, set, get, remove } from "firebase/database";
 
 export class ManagementService {
@@ -8,9 +9,10 @@ export class ManagementService {
     this.basePath = basePath;
   }
 
-  /**
-   * Carrega as lojas online
-   */
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  // CARREGA LOJAS ONLINE  // PASSAR PARA USERSSERVICE.JSX FUTURAMENTE
+
   async loadOnlineStores() {
     const statusRef = ref(this.db, `${this.basePath}/status`);
     const snapshot = await get(statusRef);
@@ -23,17 +25,17 @@ export class ManagementService {
     return onlineUsers;
   }
 
-  /**
-   * Envia requisição de consulta de tabela para uma loja específica
-   */
-  async sendTableRequest(targetStore, tableName, fieldName, searchValue, limitDate) {
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  // ENVIA REQUISIÇÃO DE TABELA PARA UMA LOJA ESPECÍFICA
+
+  async sendTableRequest(targetStore, tableName, fieldName, searchValue) {
     const requestId = `req_${this.currentUser}_${Date.now()}`;
     const requestPayload = {
       requesterId: this.currentUser,
       tableName: tableName,
       fieldName: fieldName,
       searchValue: searchValue,
-      limitDate: limitDate,
       timestamp: Date.now()
     };
 
@@ -43,50 +45,51 @@ export class ManagementService {
     return requestId;
   }
 
-  /**
-   * Envia requisições para múltiplas lojas
-   */
-  async sendMultipleTableRequests(stores, tableName, fieldName, searchValue, limitDate) {
-    console.log('[MANAGEMENT SERVICE] Enviando requisições para múltiplas lojas:', {
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+  // ENVIA REQUISIÇÕES PARA MÚLTIPLAS LOJAS
+
+  async sendMultipleTableRequests(stores, tableName, fieldName, searchValue) {
+    console.log('[REQUEST SERVICE] Enviando requisições para múltiplas lojas:', {
       stores,
       tableName,
       fieldName,
-      searchValue,
-      limitDate
+      searchValue
     });
     
     const requests = stores.map(store => 
-      this.sendTableRequest(store, tableName, fieldName, searchValue, limitDate)
+      this.sendTableRequest(store, tableName, fieldName, searchValue)
     );
     return Promise.all(requests);
   }
 
-  /**
-   * Escuta respostas de requisições de tabela
-   */
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  // ESCUTA RESPOSTAS DE REQUISIÇÕES DE TABELA
+
   listenForTableAnswers(callback) {
     const answersRef = ref(this.db, `${this.basePath}/tableRequestAnswers/${this.currentUser}`);
     
-    console.log('[MANAGEMENT SERVICE] Iniciando listener para respostas em:', answersRef.toString());
+    console.log('[REQUEST SERVICE] Iniciando listener para respostas em:', answersRef.toString());
     
     return onValue(answersRef, (snapshot) => {
       if (!snapshot.exists()) return;
 
       const answers = snapshot.val();
-      console.log('[MANAGEMENT SERVICE] Respostas recebidas:', answers);
+      console.log('[REQUEST SERVICE] Respostas recebidas:', answers);
       
       const processedAnswers = {};
 
       Object.entries(answers).forEach(([requestId, answer]) => {
         const storeId = answer.storeId || answer.from || 'Desconhecida';
-        console.log(`[MANAGEMENT SERVICE] Processando resposta de ${storeId}:`, answer);
+        console.log(`[REQUEST SERVICE] Processando resposta de ${storeId}:`, answer);
         
         if (!processedAnswers[storeId]) {
           processedAnswers[storeId] = [];
         }
         
         if (Array.isArray(answer.results)) {
-          console.log(`[MANAGEMENT SERVICE] ${storeId} retornou ${answer.results.length} resultados`);
+          console.log(`[REQUEST SERVICE] ${storeId} retornou ${answer.results.length} resultados`);
           processedAnswers[storeId].push(...answer.results.map(item => ({
             ...item,
             storeId: storeId
@@ -96,20 +99,21 @@ export class ManagementService {
         // Remove a resposta do Firebase após um delay para garantir processamento
         setTimeout(() => {
           remove(ref(this.db, `${this.basePath}/tableRequestAnswers/${this.currentUser}/${requestId}`));
-          console.log(`[MANAGEMENT SERVICE] Resposta ${requestId} removida do Firebase`);
+          console.log(`[REQUEST SERVICE] Resposta ${requestId} removida do Firebase`);
         }, 1000); // 1 segundo de delay
       });
 
       if (Object.keys(processedAnswers).length > 0) {
-        console.log('[MANAGEMENT SERVICE] Chamando callback com resultados processados:', processedAnswers);
+        console.log('[REQUEST SERVICE] Chamando callback com resultados processados:', processedAnswers);
         callback(processedAnswers);
       }
     });
   }
 
-  /**
-   * Escuta requisições de tabela direcionadas para esta loja
-   */
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  // ESCUTA REQUISIÇÕES DE TABELA DIRECIONADAS PARA ESTA LOJA
+
   listenForTableRequests(callback) {
     const requestsRef = ref(this.db, `${this.basePath}/tableRequests/${this.currentUser}`);
     
@@ -121,15 +125,15 @@ export class ManagementService {
       Object.entries(requests).forEach(([requestId, request]) => {
         callback(requestId, request);
         // Remove a requisição do Firebase
-        console.log(`[MANAGEMENT SERVICE] Removendo requisição ${requestId} do Firebase`);
-        //remove(ref(this.db, `${this.basePath}/tableRequests/${this.currentUser}/${requestId}`));
+        remove(ref(this.db, `${this.basePath}/tableRequests/${this.currentUser}/${requestId}`));
       });
     });
   }
 
-  /**
-   * Envia resposta de requisição de tabela
-   */
+  ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+  // ENVIA RESPOSTA DE REQUISIÇÃO DE TABELA
+
   async sendTableResponse(requesterId, requestId, result) {
     const answerPayload = {
       requestId: requestId,

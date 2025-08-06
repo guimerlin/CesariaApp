@@ -340,7 +340,7 @@ app.on('activate', () => {
 
 // Expõe Configurações globais.
 
-ipcMain.handle('get-config', async () => {
+ipcMain.handle('get-config', () => {
   return configFile;
 });
 
@@ -455,7 +455,7 @@ ipcMain.handle('query-firebird', async (event, config, searchTerm) => {
 
 ipcMain.handle(
   'query-table-firebird',
-  async (event, config, tableName, fieldName, searchValue, limitDate = "2025/07/20") => {
+  async (event, config, tableName, fieldName, searchValue, limitDate) => {
     try {
       console.log(
         '[ELECTRON] Executando consulta tabela Firebird real (Gerenciamento):',
@@ -465,6 +465,30 @@ ipcMain.handle(
       console.log('  Campo:', fieldName);
       console.log('  Valor:', searchValue);
       console.log('  Data:', limitDate);
+
+      // CALCULAR A DATA DO CONVENIO
+      const calculateDate = (limitDate) => {
+        const diaFormatado = String(limitDate).padStart(2, '0');
+        const hoje = new Date();
+        const anoAtual = hoje.getFullYear();
+        const mesAtual = hoje.getMonth() + 1;
+        const diaAtual = hoje.getDate();
+
+        if (diaAtual >= limitDate) {
+          const mesFormatado = String(mesAtual).padStart(2, '0');
+          return `${anoAtual}-${mesFormatado}-${diaFormatado}`;
+        } else {
+          let anoInicio = anoAtual;
+          let mesInicio = mesAtual - 1;
+          if (mesInicio < 1) {
+            mesInicio = 12;
+            anoInicio -= 1;
+          }
+          const mesFormatado = String(mesInicio).padStart(2, '0');
+          return `${anoInicio}-${mesFormatado}-${diaFormatado}`;
+      }}
+
+
 
       const options = {
         host: config.host,
@@ -528,10 +552,22 @@ GROUP BY
 	  CL.MATRICULA,
 	  CL.BLOQUEIACLIENTE;
               `;
-              params = [searchValue, limitDate];
+              params = [searchValue, calculateDate(limitDate)];
               break;
             case 'CLIENTES':
-              sql = `SELECT * FROM CLIENTES WHERE UPPER(${fieldName}) CONTAINING UPPER(?)`;
+              sql = `SELECT
+              C.NOME,
+              C.CIC AS DOCUMENTO,
+              CV.NOME AS CONVENIO,
+              C.MATRICULA,
+              C.BLOQUEIACLIENTE AS BLOQUEIO,
+              C.LIMITEDECOMPRA AS LIMITE
+              FROM
+              CLIENTES C
+              LEFT JOIN
+              CONVENIOS CV ON C.CONVENIOS = CV.CODIGO
+              WHERE
+              UPPER(C.${fieldName}) CONTAINING UPPER(?)`;
               params = [searchValue];
               break;
             // Adicione outros casos para suas tabelas

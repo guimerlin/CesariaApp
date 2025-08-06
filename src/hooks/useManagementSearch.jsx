@@ -9,9 +9,10 @@ export const useManagementSearch = (db, currentUser, basePath) => {
   const [statusMessage, setStatusMessage] = useState('');
   const [selectedStore, setSelectedStore] = useState('');
   const [selectedTable] = useState('CLIENTES'); // Fixado em CLIENTES
-  const [selectedField, setSelectedField] = useState('');
+  const [selectedField, setSelectedField] = useState('NOMECLIENTE');
   const [searchTerm, setSearchTerm] = useState('');
   const [searchAllStores, setSearchAllStores] = useState(true);
+  const [selectedConvenio, setSelectedConvenio] = useState('');
 
   const managementServiceRef = useRef(null);
   const activeListenerRef = useRef(null);
@@ -120,6 +121,7 @@ export const useManagementSearch = (db, currentUser, basePath) => {
           'DADOSPREVENDA',
           'NOMECLIENTE', // campo padrão para busca
           searchTerm,
+          selectedConvenio,
         );
         setStatusMessage(
           `Solicitação enviada para ${onlineStores.length} loja(s) online`,
@@ -135,6 +137,7 @@ export const useManagementSearch = (db, currentUser, basePath) => {
           'DADOSPREVENDA',
           'NOMECLIENTE',
           searchTerm,
+          selectedConvenio,
         );
         setStatusMessage(`Solicitação enviada para ${selectedStore}`);
       }
@@ -160,6 +163,7 @@ export const useManagementSearch = (db, currentUser, basePath) => {
     onlineStores,
     isLoading,
     searchResults,
+    selectedConvenio
   ]);
 
   /**
@@ -216,6 +220,7 @@ export const useManagementSearch = (db, currentUser, basePath) => {
     selectedField,
     searchTerm,
     searchAllStores,
+    selectedConvenio,
 
     // Ações
     setSelectedStore,
@@ -225,6 +230,7 @@ export const useManagementSearch = (db, currentUser, basePath) => {
     executeSearch,
     clearResults,
     loadOnlineStores,
+    setSelectedConvenio,
 
     // Utilitários
     canSearch: canSearch(),

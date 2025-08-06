@@ -8,7 +8,7 @@
   "shakeTimeout": null,
   "shakeIntensity": 4,
   "openWithSystem": true,
-  "showDevMenu": false,
+  "showDevMenu": true,
   "convenios": {
     "Posto 23": "20",
     "Cinpal": "20",

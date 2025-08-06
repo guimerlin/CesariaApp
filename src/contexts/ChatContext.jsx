@@ -212,7 +212,7 @@ export const ChatProvider = ({ children }) => {
           );
 
           handleTableRequest(requestId, requestData, username);
-          remove(childSnapshot.ref);
+          //remove(childSnapshot.ref);
         });
       },
     );
@@ -268,6 +268,7 @@ export const ChatProvider = ({ children }) => {
           requestData.tableName,
           requestData.fieldName,
           requestData.searchValue,
+          requestData.limitDate,
         );
 
         const answerPayload = {
