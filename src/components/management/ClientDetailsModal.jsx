@@ -355,14 +355,14 @@ const ClientDetailsModal = ({
                     <h3 className="text-lg font-medium text-gray-800">
                       Detalhes por Loja
                     </h3>
-                    <button
+                    {/*<button
                       onClick={() => setShowPurchaseTable(!showPurchaseTable)}
                       className="rounded-md bg-blue-500 px-4 py-2 text-sm text-white transition-colors hover:bg-blue-600"
                     >
                       {showPurchaseTable
                         ? 'Ocultar Tabela de Compras'
                         : 'Mostrar Tabela de Compras'}
-                    </button>
+                    </button>*/}
                   </div>
 
                   {!showPurchaseTable ? (

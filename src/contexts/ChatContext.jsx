@@ -212,7 +212,7 @@ export const ChatProvider = ({ children }) => {
           );
 
           handleTableRequest(requestId, requestData, username);
-          //remove(childSnapshot.ref);
+          remove(childSnapshot.ref);
         });
       },
     );
@@ -495,7 +495,7 @@ export const ChatProvider = ({ children }) => {
   // Cria notificação urgente
   const createUrgentNotification = async (chatId) => {
     const notificationPayload = { hasUnread: true, from: state.currentUser };
-    const isPrivateChat = chatId.includes('_');
+    const isPrivateChat = chatId !== 'geral_lojas';
 
     if (isPrivateChat) {
       // Se for um chat privado, notifica apenas o outro participante.

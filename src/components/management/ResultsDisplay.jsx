@@ -103,7 +103,7 @@ const ResultsDisplay = ({
         </div>
         <div className="max-h-[calc(100vh-300px)] overflow-x-auto overflow-y-auto p-6">
           <p className="text-center text-gray-500">
-            Nenhuma pesquisa realizada ainda.
+            Nenhuma pesquisa realizada.
           </p>
         </div>
       </div>

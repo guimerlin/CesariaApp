@@ -102,7 +102,7 @@ const SearchControls = ({
       {/* Informação sobre tabela fixa */}
       <div className="mb-4 rounded-md border border-blue-200 bg-blue-50 p-3">
         <p className="text-sm text-blue-700">
-          <strong>Tabela selecionada:</strong> CLIENTES (fixo)
+          <strong>Selecione o Convênio e Digite o Nome do Cliente!</strong>
         </p>
       </div>
 
@@ -113,7 +113,7 @@ const SearchControls = ({
             htmlFor="searchTerm"
             className="mb-2 block text-sm font-medium text-gray-700"
           >
-            Termo de Pesquisa:
+            Nome do Cliente:
           </label>
           <input
             type="text"
@@ -121,7 +121,7 @@ const SearchControls = ({
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Digite o termo para pesquisar..."
+            placeholder="Digite o nome do Cliente..."
             className="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
           />
         </div>
@@ -138,7 +138,7 @@ const SearchControls = ({
                 className="mr-2"
               />
               <span className="text-sm text-gray-700">
-                Pesquisar em todas as lojas
+                Todas as Lojas
               </span>
             </label>
           </div>
@@ -164,7 +164,7 @@ const SearchControls = ({
           onClick={onRefreshStores}
           className="rounded-md bg-green-500 px-6 py-2 text-white transition-colors hover:bg-green-600"
         >
-          Atualizar Lojas
+          Atualizar
         </button>
       </div>
     </div>
