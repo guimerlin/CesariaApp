@@ -41,48 +41,6 @@ const ClientDetailsModal = ({
     return 'Data Inválida';
   };
 
-  const calculateUtilizado = (results) => {
-    if (!results || results.length === 0) return 0;
-
-    const hoje = new Date();
-    const anoAtual = hoje.getFullYear();
-    const mesAtual = hoje.getMonth();
-    const diaAtual = hoje.getDate();
-
-    let dataInicio;
-    if (diaAtual >= 20) {
-      dataInicio = new Date(anoAtual, mesAtual, 20, 0, 0, 0);
-    } else {
-      let anoInicio = anoAtual;
-      let mesInicio = mesAtual - 1;
-      if (mesInicio < 0) {
-        mesInicio = 11;
-        anoInicio -= 1;
-      }
-      dataInicio = new Date(anoInicio, mesInicio, 20, 0, 0, 0);
-    }
-
-    let total = 0;
-    results.forEach((result) => {
-      const cancelada = String(result.CANCELADA || '').trim();
-      const dataVenda = result.DATA ? new Date(result.DATA) : null;
-      const tipo = String(result.TIPO || '').trim();
-
-      if (
-        cancelada !== 'Y' &&
-        tipo === 'PRAZO' &&
-        dataVenda &&
-        !isNaN(dataVenda.getTime()) &&
-        dataVenda >= dataInicio
-      ) {
-        const valorTotal = Number(result.VALORTOTAL) || 0;
-        total += valorTotal;
-      }
-    });
-
-    return total;
-  };
-
   /**
    * Renderiza a tabela de compras do cliente no formato planilha
    */
@@ -237,7 +195,7 @@ const ClientDetailsModal = ({
   };
 
   return (
-    <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75">
       <div className="mx-4 max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-lg bg-white shadow-xl">
         {/* Header */}
         <div className="border-b border-gray-200 p-6">
@@ -338,7 +296,6 @@ const ClientDetailsModal = ({
                     <div className="space-y-4">
                       {Object.entries(safeClientDetails).map(
                         ([storeId, details]) => {
-                          const utilizadoTotal = calculateUtilizado(details);
                           const primeiroRegistro = details[0] || {};
 
                           return (

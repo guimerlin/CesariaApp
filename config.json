@@ -1,7 +1,7 @@
 {
   "useAppShake": true,
   "usetray": true,
-  "showAppName": true,
+  "showAppName": false,
   "instanceLock": true,
   "awaysClose": false,
   "shakeIntervalTime": 50,

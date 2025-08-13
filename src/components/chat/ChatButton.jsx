@@ -1,4 +1,5 @@
 import React from 'react';
+import { useChat } from '../../contexts/ChatContext';
 
 const ChatButton = ({
   chatId,
@@ -9,6 +10,9 @@ const ChatButton = ({
   hasUrgentNotification = false,
   onClick,
 }) => {
+  const { currentChatId } = useChat();
+  const isSelected = currentChatId === chatId;
+
   const getInitials = (name) => {
     return name
       .split(' ')
@@ -19,7 +23,9 @@ const ChatButton = ({
 
   return (
     <button
-      className="flex w-full items-center justify-between rounded-lg p-3 text-left transition-colors duration-200 hover:bg-gray-200 focus:ring-2 focus:ring-red-400 focus:outline-none"
+      className={`flex w-full items-center justify-between rounded-lg p-3 text-left transition-colors duration-200 hover:bg-gray-200 focus:bg-blue-300 ${
+        isSelected ? 'bg-blue-300 font-semibold' : ''
+      }`}
       onClick={() => onClick(chatId, chatName)}
     >
       <div className="relative flex items-center">

@@ -56,7 +56,6 @@ const Search = () => {
     executeSearch,
     requestItem,
     clearResults,
-    getAvailableProducts,
     hasResults,
   } = useStockSearch(db, currentUser, basePath, dbService);
   useEffect(() => {
@@ -86,7 +85,6 @@ const Search = () => {
     config: firebirdConfig,
     updateConfig: updateFirebirdConfig,
     testConnection,
-    queryTable,
     isConnected,
     isLoading: firebirdLoading,
     error: firebirdError,
@@ -151,29 +149,6 @@ const Search = () => {
     },
     [updateFirebirdConfig, testConnection],
   );
-
-  // Listener para requisições de tabela do Firebird
-  useEffect(() => {
-    if (!db || !currentUser) return;
-    const handleTableRequest = async (requestId, request) => {
-      console.debug('[DEBUG] Processando requisição de tabela:', request);
-      try {
-        const result = await queryTable(
-          request.tableName,
-          request.fieldName,
-          request.searchValue,
-        );
-        // Aqui você pode implementar o envio da resposta de volta ao Firebase
-        // usando o stockService ou dbService
-        console.debug('[DEBUG] Resultado da consulta:', result);
-      } catch (error) {
-        console.error('[DEBUG] Erro ao processar requisição de tabela:', error);
-      }
-    };
-    // Implementar listener para requisições de tabela
-    // Este código seria similar ao que está no stock.js original
-    console.debug('[DEBUG] Listener de requisições de tabela inicializado');
-  }, [db, currentUser, queryTable]);
 
   // Listener para configuração do Firebird via Electron
   useEffect(() => {
@@ -256,7 +231,6 @@ const Search = () => {
                 Limpar Resultados
               </button>
             )}
-            {/* Botão de Configurações removido da interface principal */}
           </div>
 
           {/* Tabela de Resultados */}
@@ -264,7 +238,6 @@ const Search = () => {
             <ResultsTable
               searchResults={searchResults}
               onRequestItem={handleRequestItem}
-              getAvailableProducts={getAvailableProducts}
             />
           ) : (
             !isLoading &&

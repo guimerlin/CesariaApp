@@ -93,13 +93,7 @@ export class StockService {
           );
         }
 
-        // Remove a resposta do Firebase
-        remove(
-          ref(
-            this.db,
-            `${this.basePath}/stockRequestAnswers/${this.currentUser}/${key}`,
-          ),
-        );
+        
       });
 
       if (Object.keys(processedAnswers).length > 0) {
@@ -216,4 +210,15 @@ export class StockService {
     );
     await set(answerRef, answerPayload);
   }
-}
+
+  /**
+   * Limpa todas as respostas de estoque para o usuário atual
+   */
+  async clearStockAnswers() {
+    const answersRef = ref(
+      this.db,
+      `${this.basePath}/stockRequestAnswers/${this.currentUser}`
+    );
+    await remove(answersRef);
+    console.log('[STOCK SERVICE] Respostas de estoque limpas.');
+  }}

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import './App.css';
 import { ChatProvider, useChat } from './contexts/ChatContext';
 import { useAlertHandler } from './hooks/useAlertHandler';
@@ -9,6 +9,7 @@ import Search from './pages/Search';
 import Management from './pages/Management';
 import TaskBar from './components/common/TaskBar';
 import { HashRouter as Router, Route, Routes } from 'react-router-dom';
+import UpdateModal from './components/common/UpdateModal';
 
 const AppContent = () => {
   const {
@@ -35,6 +36,48 @@ const AppContent = () => {
     stopAlert,
     initializeAudioContext,
   } = useAlertHandler();
+
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState('downloading'); // 'downloading' or 'downloaded'
+
+  useEffect(() => {
+    // Envia o evento para o processo principal assim que o app estiver pronto
+    window.electron.ipcRenderer.send('app-ready');
+
+    const handleUpdateAvailable = () => {
+      setUpdateStatus('downloading');
+      setShowUpdateModal(true);
+    };
+
+    const handleUpdateDownloaded = () => {
+      setUpdateStatus('downloaded');
+      setShowUpdateModal(true);
+    };
+
+    const handleUpdatePending = () => {
+      setUpdateStatus('pending');
+      setShowUpdateModal(true);
+    };
+
+    window.electron.ipcRenderer.on('update-available', handleUpdateAvailable);
+    window.electron.ipcRenderer.on('update-downloaded', handleUpdateDownloaded);
+    window.electron.ipcRenderer.on('update-pending', handleUpdatePending);
+
+
+    return () => {
+      window.electron.ipcRenderer.removeListener('update-available', handleUpdateAvailable);
+      window.electron.ipcRenderer.removeListener('update-downloaded', handleUpdateDownloaded);
+      window.electron.ipcRenderer.removeListener('update-pending', handleUpdatePending);
+    };
+  }, []);
+
+  const handleRestart = () => {
+    window.electron.ipcRenderer.send('restart-app');
+  };
+
+  const handleLater = () => {
+    setShowUpdateModal(false);
+  };
 
   // Inicializa o contexto de áudio na primeira interação do usuário
   useEffect(() => {
@@ -187,6 +230,12 @@ const AppContent = () => {
         isVisible={alertIsActive}
         alertMessage={alertMessage}
         onStopAlert={handleStopAlert}
+      />
+      <UpdateModal
+        show={showUpdateModal}
+        status={updateStatus}
+        onRestart={handleRestart}
+        onLater={handleLater}
       />
     </div>
   );

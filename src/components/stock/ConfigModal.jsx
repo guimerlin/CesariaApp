@@ -126,7 +126,7 @@ const ConfigModal = ({
 
   return (
     <div
-      className="bg-opacity-40 fixed inset-0 z-50 flex items-center justify-center bg-black"
+      className=" fixed inset-0 z-50 flex items-center justify-center bg-black/40"
       onClick={handleBackdropClick}
     >
       <div className="mx-4 max-h-[90vh] w-96 max-w-sm overflow-y-auto rounded-lg bg-white p-6 shadow-xl">
