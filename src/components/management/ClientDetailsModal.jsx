@@ -97,16 +97,8 @@ const ClientDetailsModal = ({
       );
     }
 
-    const fields = [
-      'NOMECLIENTE',
-      'VALORTOTAL',
-      'DATA',
-      'TIPO',
-      'CANCELADA',
-      'CONVENIO',
-      'DOCUMENTOCLIENTE',
-      'NUMEROCLIENTE',
-    ];
+    // Cabeçalhos da tabela principal
+    const fields = ['Vencimento', 'Descrição', 'Valor', 'Multa', 'Valor Restante'];
 
     return (
       <div className="mt-6">
@@ -115,11 +107,7 @@ const ClientDetailsModal = ({
         </h3>
 
         {Object.entries(safeClientDetails).map(([storeId, results]) => {
-          const filteredResults = results.filter(
-            (result) => result.TIPO === 'PRAZO',
-          );
-
-          if (filteredResults.length === 0) {
+          if (results.length === 0) {
             return (
               <div key={storeId} className="mb-6">
                 <div className="mb-3 text-lg font-bold text-blue-700">
@@ -132,40 +120,9 @@ const ClientDetailsModal = ({
             );
           }
 
-          let totalPrazoCliente = 0;
-          const hoje = new Date();
-          const anoAtual = hoje.getFullYear();
-          const mesAtual = hoje.getMonth();
-          const diaAtual = hoje.getDate();
-
-          let dataInicio;
-          if (diaAtual >= 20) {
-            dataInicio = new Date(anoAtual, mesAtual, 20, 0, 0, 0);
-          } else {
-            let anoInicio = anoAtual;
-            let mesInicio = mesAtual - 1;
-            if (mesInicio < 0) {
-              mesInicio = 11;
-              anoInicio -= 1;
-            }
-            dataInicio = new Date(anoInicio, mesInicio, 20, 0, 0, 0);
-          }
-
-          // Calcular o total
-          filteredResults.forEach((result) => {
-            const cancelada = String(result.CANCELADA || '').trim();
-            const dataVenda = result.DATA ? new Date(result.DATA) : null;
-
-            if (
-              cancelada !== 'Y' &&
-              dataVenda &&
-              !isNaN(dataVenda.getTime()) &&
-              dataVenda >= dataInicio
-            ) {
-              const valorTotal = Number(result.VALORTOTAL) || 0;
-              totalPrazoCliente += valorTotal;
-            }
-          });
+          // Extrair e processar as vendas do primeiro resultado
+          const salesData = results[0]?.VENDAS ? JSON.parse(results[0].VENDAS) : {};
+          const sales = Object.entries(salesData);
 
           return (
             <div
@@ -198,50 +155,40 @@ const ClientDetailsModal = ({
                 </div>
 
                 {/* Linhas da tabela */}
-                {filteredResults.map((result, index) => (
-                  <div
-                    key={index}
-                    className="grid min-w-full items-center gap-4 border-b p-3 hover:bg-gray-50"
-                    style={{
-                      gridTemplateColumns: `repeat(${fields.length}, minmax(150px, 1fr))`,
-                    }}
-                  >
-                    {fields.map((field) => {
-                      let displayValue = result[field] ?? 'N/A';
-
-                      if (field === 'DATA') {
-                        displayValue = formatDate(result[field]);
-                      } else if (
-                        field === 'NUMEROCLIENTE' &&
-                        result[field] != null
-                      ) {
-                        displayValue = Number(result[field]).toLocaleString(
-                          'pt-BR',
-                        );
-                      } else if (
-                        field === 'VALORTOTAL' &&
-                        result[field] != null
-                      ) {
-                        displayValue = formatCurrency(result[field]);
-                      } else if (field === 'CANCELADA' && result[field]) {
-                        displayValue = String(result[field]).trim();
-                      }
-
-                      return (
-                        <div
-                          key={field}
-                          className="text-sm"
-                          title={String(result[field] || '')}
-                        >
-                          {displayValue}
+                {sales.map(([saleId, saleDetails]) => (
+                  <div key={saleId}>
+                    <div
+                      className="grid min-w-full items-center gap-4 border-b p-3 hover:bg-gray-50"
+                      style={{
+                        gridTemplateColumns: `repeat(${fields.length}, minmax(150px, 1fr))`,
+                      }}
+                    >
+                      <div>{formatDate(saleDetails.vencimento)}</div>
+                      <div>{saleDetails.descricao}</div>
+                      <div>{formatCurrency(saleDetails.valor)}</div>
+                      <div>{formatCurrency(saleDetails.multa)}</div>
+                      <div>{formatCurrency(saleDetails.valor_restante)}</div>
+                    </div>
+                    {/* Sub-tabela de itens */}
+                    <div className="pl-8">
+                      <div className="grid grid-cols-3 gap-4 bg-gray-50 p-2 font-bold">
+                        <div>Produto</div>
+                        <div>Código</div>
+                        <div>Valor</div>
+                      </div>
+                      {saleDetails.itens.map((item, index) => (
+                        <div key={index} className="grid grid-cols-3 gap-4 p-2">
+                          <div>{item.produto}</div>
+                          <div>{item.codigo}</div>
+                          <div>{formatCurrency(item.valor_total)}</div>
                         </div>
-                      );
-                    })}
+                      ))}
+                    </div>
                   </div>
                 ))}
 
                 {/* Linha de total */}
-                {filteredResults.length > 0 && (
+                {results.length > 0 && (
                   <div
                     className="grid min-w-full items-center gap-4 border-t-2 border-gray-300 bg-gray-100 p-3 font-bold"
                     style={{
@@ -252,10 +199,10 @@ const ClientDetailsModal = ({
                       className="text-right text-sm font-bold"
                       style={{ gridColumn: `1 / span ${fields.length - 1}` }}
                     >
-                      Total a Prazo (a partir de {formatDate(dataInicio)}):
+                      Total Gasto:
                     </div>
                     <div className="text-sm font-bold text-green-700">
-                      {formatCurrency(totalPrazoCliente)}
+                      {formatCurrency(results[0].TOTALGASTO)}
                     </div>
                   </div>
                 )}
@@ -304,7 +251,7 @@ const ClientDetailsModal = ({
                       Nome do Cliente:
                     </label>
                     <p className="font-medium text-gray-800">
-                      {clientData?.NOMECLIENTE || 'N/A'}
+                      {clientData?.NOME || 'N/A'}
                     </p>
                   </div>
                   <div>
@@ -355,14 +302,14 @@ const ClientDetailsModal = ({
                     <h3 className="text-lg font-medium text-gray-800">
                       Detalhes por Loja
                     </h3>
-                    {/*<button
+                    <button
                       onClick={() => setShowPurchaseTable(!showPurchaseTable)}
                       className="rounded-md bg-blue-500 px-4 py-2 text-sm text-white transition-colors hover:bg-blue-600"
                     >
                       {showPurchaseTable
                         ? 'Ocultar Tabela de Compras'
                         : 'Mostrar Tabela de Compras'}
-                    </button>*/}
+                    </button>
                   </div>
 
                   {!showPurchaseTable ? (
@@ -386,7 +333,7 @@ const ClientDetailsModal = ({
                                     Nome do Cliente:
                                   </label>
                                   <p className="text-gray-800">
-                                    {primeiroRegistro.NOMECLIENTE || 'N/A'}
+                                    {primeiroRegistro.NOME || 'N/A'}
                                   </p>
                                 </div>
                                 <div>
@@ -394,7 +341,7 @@ const ClientDetailsModal = ({
                                     Convênio:
                                   </label>
                                   <p className="text-gray-800">
-                                    {primeiroRegistro.NOME || 'N/A'}
+                                    {primeiroRegistro.CONVENIO || 'N/A'}
                                   </p>
                                 </div>
                                 <div>
@@ -402,7 +349,7 @@ const ClientDetailsModal = ({
                                     Documento do Cliente:
                                   </label>
                                   <p className="text-gray-800">
-                                    {primeiroRegistro.DOCUMENTOCLIENTE || primeiroRegistro.CIC || 'N/A'}
+                                    {primeiroRegistro.DOCUMENTO || primeiroRegistro.CIC || 'N/A'}
                                   </p>
                                 </div>
                                 <div>

@@ -466,30 +466,6 @@ ipcMain.handle(
       console.log('  Valor:', searchValue);
       console.log('  Data:', limitDate);
 
-      // CALCULAR A DATA DO CONVENIO
-      const calculateDate = (limitDate) => {
-        const diaFormatado = String(limitDate).padStart(2, '0');
-        const hoje = new Date();
-        const anoAtual = hoje.getFullYear();
-        const mesAtual = hoje.getMonth() + 1;
-        const diaAtual = hoje.getDate();
-
-        if (diaAtual >= limitDate) {
-          const mesFormatado = String(mesAtual).padStart(2, '0');
-          return `${anoAtual}-${mesFormatado}-${diaFormatado}`;
-        } else {
-          let anoInicio = anoAtual;
-          let mesInicio = mesAtual - 1;
-          if (mesInicio < 1) {
-            mesInicio = 12;
-            anoInicio -= 1;
-          }
-          const mesFormatado = String(mesInicio).padStart(2, '0');
-          return `${anoInicio}-${mesFormatado}-${diaFormatado}`;
-      }}
-
-
-
       const options = {
         host: config.host,
         port: parseInt(config.port),
@@ -509,50 +485,72 @@ ipcMain.handle(
             return resolve({ success: false, error: err.message });
           }
 
-          // CUIDADO: Construir queries dinamicamente pode ser perigoso (SQL Injection).
-          // Sempre use parâmetros (?) nas suas queries e deixe o driver tratar a sanitização.
-          // Para tableName e fieldName, que não podem ser parametrizados, você DEVE
-          // validar contra uma lista de nomes permitidos para evitar injeção.
 
           let sql = '';
           let params = [];
 
-          // Exemplo de lógica para construir a query baseada na tabela e campo
-          // Adapte esta lógica ao seu esquema de banco de dados!
+
           switch (tableName.toUpperCase()) {
             case 'DADOSPREVENDA':
-              sql = `
-SELECT
-	  D.NOMECLIENTE,
-	  CL.MATRICULA,
-	  CL.BLOQUEIACLIENTE AS BLOQUEIO,
-    SUM(D.VALORTOTAL) AS TOTALGASTO,
-    CL.LIMITEDECOMPRA - SUM(D.VALORTOTAL) AS DISPONIVEL,
-    C.NOME,
-    D.DOCUMENTOCLIENTE,
-    CL.CIC,
-    CL.LIMITEDECOMPRA AS LIMITE
-FROM
-    DADOSPREVENDA D
-LEFT JOIN
-    CONVENIOS C ON D.CONVENIO  = C.CODIGO
-LEFT JOIN
-	  CLIENTES CL ON D.NOMECLIENTE = CL.NOME
-WHERE
-    UPPER(D.NOMECLIENTE) CONTAINING UPPER(?)
-    AND D.DATA > ?
-    AND D.CANCELADA = 'N'
-    AND D.TIPO = 'PRAZO'
+              sql = `SELECT
+  c.NOME,
+  c.CIC AS DOCUMENTO,
+  c.MATRICULA,
+  conv.NOME AS CONVENIO,
+  c.BLOQUEIACLIENTE AS BLOQUEIO,
+  c.LIMITEDECOMPRA AS LIMITE,
+  CAST(
+    '{' || LIST(
+      '"' || pc.CODIGOVENDA || '": {' ||
+        '"vencimento": "' || pc.VENCIMENTO || '", ' ||
+        '"descricao": "' || pc.DESCRICAO || '", ' ||
+        '"valor": ' || pc.VALOR || ', ' ||
+        '"multa": ' || pc.MULTA || ', ' ||
+        '"valor_pago": ' || pc.VALORPAGO || ', ' ||
+        '"valor_restante": ' || pc.VALORRESTANTE || ', ' ||
+        '"itens": ' || COALESCE((
+            SELECT '[' || LIST(
+              CASE WHEN vcf2.CANCELAMENTO IS NULL THEN
+                '{"produto": "' || vcf2.PRODUTO || '", "valor_total": ' || vcf2.PRECOTOTAL || ', "codigo": "' || vcf2.CODIGOPRODUTO || '"}'
+              END, ', '
+            ) || ']'
+            FROM VENDAS_CONVERTIDA_FP vcf2
+            WHERE vcf2.VENDA = pc.CODIGOVENDA
+            GROUP BY vcf2.VENDA
+        ), '[]') ||
+      '}'
+    , ', ') || '}'
+  AS VARCHAR(8191)) AS VENDAS,
+  CASE WHEN sc.SOMAVALOR < 0 THEN sc.SOMAMULTA + sc.SOMAVALOR ELSE sc.SOMAVALOR END AS TOTALGASTO,
+  CASE WHEN sc.SOMAVALOR < 0 THEN 0 ELSE sc.SOMAMULTA END AS MULTA,
+  CASE WHEN sc.SOMAVALOR <= 0 THEN c.LIMITEDECOMPRA - (sc.SOMAMULTA + sc.SOMAVALOR) ELSE c.LIMITEDECOMPRA - sc.SOMAVALOR END AS DISPONIVEL
+FROM PARCELADECOMPRA pc
+LEFT JOIN CLIENTES c ON pc.CODIGOCLIENTE = c.CODIGO
+LEFT JOIN (
+    SELECT
+        pc2.CODIGOCLIENTE,
+        SUM(pc2.VALOR - pc2.VALORPAGO) AS SOMAVALOR,
+        SUM(pc2.MULTA) AS SOMAMULTA
+    FROM PARCELADECOMPRA pc2
+    WHERE pc2.VALORRESTANTE <> 0.00
+    GROUP BY pc2.CODIGOCLIENTE
+) sc ON pc.CODIGOCLIENTE = sc.CODIGOCLIENTE
+LEFT JOIN CONVENIOS conv ON c.CONVENIOS = conv.CODIGO
+WHERE UPPER(c.NOME) CONTAINING UPPER(?)
+  AND pc.VALORRESTANTE <> 0.00
 GROUP BY
-	  D.NOMECLIENTE,
-	  C.NOME,
-	  D.DOCUMENTOCLIENTE,
-	  CL.CIC,
-	  CL.LIMITEDECOMPRA,
-	  CL.MATRICULA,
-	  CL.BLOQUEIACLIENTE;
-              `;
-              params = [searchValue, calculateDate(limitDate)];
+  pc.CODIGOCLIENTE,
+  c.NOME,
+  c.MATRICULA,
+  conv.NOME,
+  c.BLOQUEIACLIENTE,
+  c.LIMITEDECOMPRA,
+  c.NOME,
+  c.CIC,
+  sc.SOMAVALOR,
+  sc.SOMAMULTA
+ORDER BY c.NOME;`;
+              params = [searchValue];
               break;
             case 'CLIENTES':
               sql = `SELECT
@@ -570,24 +568,41 @@ GROUP BY
               UPPER(C.${fieldName}) CONTAINING UPPER(?)`;
               params = [searchValue];
               break;
-            // Adicione outros casos para suas tabelas
+            case 'PARCELADECOMPRA':
+              sql = `SELECT CODIGOCLIENTE
+                   , CODIGOVENDA
+                   , VENCIMENTO
+                   , DESCRICAO
+                   , VALOR
+                   , MULTA
+                   , VALORPAGO
+                   , VALORRESTANTE
+              FROM PARCELADECOMPRA
+              WHERE CODIGOCLIENTE = ?
+              AND VALORRESTANTE <> 0.00`;
+              params = [searchValue];
+              break;
+            case 'VENDAS_CONVERTIDA_FP':
+              sql = `SELECT VENDA
+              , DATA
+              , HORA
+              , CODIGOCLIENTE
+              , CODIGOPRODUTO
+              , PRODUTO
+              , QUANTIDADE
+              , UNIDADE
+              , PRECOUNITARIO
+              , SUBTOTAL
+              , DESCONTO
+              , PRECOTOTAL
+              , ATENDENTE
+              FROM VENDAS_CONVERTIDA_FP
+              WHERE VENDA = ?
+              AND CANCELAMENTO IS NULL`;
+              params = [searchValue];
+              break;
+
             default:
-              // Fallback genérico, mas com validação de campo para segurança
-              const allowedFields = [
-                'NOME',
-                'CODIGO',
-                'CPF',
-                'PRODUTO',
-                'VALORTOTAL',
-                'DATA',
-              ]; // Exemplo
-              if (!allowedFields.includes(fieldName.toUpperCase())) {
-                db.detach();
-                return resolve({
-                  success: false,
-                  error: 'Campo de pesquisa não permitido.',
-                });
-              }
               sql = `SELECT * FROM ${tableName} WHERE UPPER(${fieldName}) CONTAINING UPPER(?)`;
               params = [searchValue];
               break;
@@ -603,7 +618,7 @@ GROUP BY
 
           db.query(sql, params, function (err, result) {
             db.detach();
-            if (err) {
+            if (err) { // TRATAR ERROS DE CONSULTA
               console.error(
                 '[ELECTRON] Erro ao executar query de tabela Firebird (Gerenciamento):',
               );
@@ -612,11 +627,11 @@ GROUP BY
               console.debug(params);
               return resolve({ success: false, error: err.message });
             }
+            
             console.log(
               '[ELECTRON] Resultados da consulta de tabela Firebird (Gerenciamento):',
             );
             console.log(result);
-            console.debug(sql);
             console.debug(params);
 
 

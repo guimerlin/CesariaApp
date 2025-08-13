@@ -9,18 +9,30 @@ const ResultsDisplay = ({
   /**
    * Exibe os resultados da consulta customizada (DADOSPREVENDA)
    */
+
+  const formatCurrency = (value) => {
+    if (!value && value !== 0) return 'R$ 0,00';
+    return Number(value).toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    });
+  };
+
   const renderGenericResults = (results, storeId) => {
     // Mostra qualquer resultado que tenha pelo menos um dos campos principais
     const fields = [
-      'NOMECLIENTE',
-      'MATRICULA',
-      'BLOQUEIO',
+      'NOME',
+      'DOCUMENTO',
+      'DISPONIVEL',
       'TOTALGASTO',
       'LIMITE',
-      'DISPONIVEL',
+      'BLOQUEIO',
+      'MATRICULA',
     ];
     const filteredResults = results.filter((result) =>
-      fields.some((field) => result[field] !== undefined && result[field] !== null)
+      fields.some(
+        (field) => result[field] !== undefined && result[field] !== null,
+      ),
     );
 
     if (!filteredResults || filteredResults.length === 0) {
@@ -69,7 +81,9 @@ const ResultsDisplay = ({
                 className="text-sm"
                 title={String(result[field] ?? 'N/A')}
               >
-                {result[field] ?? 'N/A'}
+                {typeof result[field] === 'number' && field !== 'MATRICULA'
+                  ? formatCurrency(result[field])
+                  : result[field] ?? 'N/A'}
               </div>
             ))}
           </div>
