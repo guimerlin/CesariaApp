@@ -60,17 +60,15 @@ export const useStockSearch = (db, currentUser, basePath, dbService) => {
           const updatedResults = { ...prevResults };
 
           Object.entries(newResults).forEach(([loja, produtos]) => {
-            if (!updatedResults[loja]) {
-              updatedResults[loja] = [];
-            }
-            updatedResults[loja].push(...produtos);
+            // AQUI ESTÁ A MUDANÇA: Substitua 'push' por atribuição direta
+            updatedResults[loja] = produtos;
           });
 
           return updatedResults;
         });
 
-        setIsLoading(false);
-        setStatusMessage('');
+        // REMOVIDO: setIsLoading(false); e setStatusMessage('');
+        // Essas atualizações serão gerenciadas pelo novo useEffect ou pelo timeout
       },
     );
   }, []);
@@ -96,7 +94,13 @@ export const useStockSearch = (db, currentUser, basePath, dbService) => {
       }
 
       setIsLoading(true);
-      setSearchResults({});
+      setSearchResults({}); // Limpa o estado local imediatamente
+
+      // Limpa as respostas do Firebase antes de enviar novas requisições
+      if (stockServiceRef.current) {
+        await stockServiceRef.current.clearStockAnswers();
+      }
+
       setStatusMessage('Buscando...');
 
       try {
@@ -130,9 +134,12 @@ export const useStockSearch = (db, currentUser, basePath, dbService) => {
 
         // Define timeout para a busca
         setTimeout(() => {
-          if (isLoading) {
+          if (isLoading) { // Verifica se ainda está carregando
             setIsLoading(false);
-            setStatusMessage('Tempo limite da busca excedido');
+            setStatusMessage('Tempo limite da busca excedido. Limpando respostas parciais.');
+            if (stockServiceRef.current) {
+              stockServiceRef.current.clearStockAnswers(); // Limpa mesmo em caso de timeout
+            }
           }
         }, 30000);
       } catch (error) {
@@ -204,16 +211,23 @@ export const useStockSearch = (db, currentUser, basePath, dbService) => {
   }, []);
 
   /**
-   * Filtra produtos com estoque disponível
+   * Novo useEffect para gerenciar o fim da busca e a limpeza das respostas
    */
-  const getAvailableProducts = useCallback((products) => {
-    return products.filter((product) => {
-      const estoque = Number(
-        product.ESTOQUEATUAL ?? product.ESTOQUE ?? product.estoque,
-      );
-      return !isNaN(estoque) && estoque >= 1;
-    });
-  }, []);
+  useEffect(() => {
+    // Só executa se estiver carregando e houver lojas online para comparar
+    if (isLoading && onlineStores.length > 0) {
+      // Verifica se todas as lojas online têm alguma entrada em searchResults
+      const allStoresResponded = onlineStores.every(storeId => searchResults[storeId] !== undefined);
+
+      // Se todas as lojas responderam e o serviço de estoque está disponível
+      if (allStoresResponded && stockServiceRef.current) {
+        setIsLoading(false); // Finaliza o estado de carregamento
+        setStatusMessage('Busca concluída para todas as lojas.');
+        stockServiceRef.current.clearStockAnswers(); // Limpa as respostas no Firebase
+      }
+    }
+  }, [isLoading, searchResults, onlineStores, stockServiceRef]);
+
 
   // Inicia a escuta quando o componente é montado
   useEffect(() => {
@@ -244,7 +258,7 @@ export const useStockSearch = (db, currentUser, basePath, dbService) => {
     requestItem,
     clearResults,
     loadOnlineStores,
-    getAvailableProducts,
+    // getAvailableProducts,
 
     // Utilitários
     hasResults: Object.keys(searchResults).length > 0,
