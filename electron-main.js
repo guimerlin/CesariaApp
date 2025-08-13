@@ -222,6 +222,15 @@ function createTray() {
         }
       },
     },
+    { type: 'separator' },
+    {
+      label: 'Forçar Atualização da Página',
+      click: () => {
+        if (mainWindow) {
+          mainWindow.reload();
+        }
+      },
+    },
     {
       label: 'Opções de Desenvolvedor',
       click: () => {
@@ -231,6 +240,7 @@ function createTray() {
         }
       },
     },
+    { type: 'separator' },
     {
       label: 'Sair',
       click: () => {

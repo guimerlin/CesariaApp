@@ -12,7 +12,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "dist": "npm run build && electron-builder",
-    "publish": "electron-builder --publish always"
+    "publish": "npm run build && electron-builder --publish always"
   },
   "author": "LGBDS",
   "license": "ISC",
