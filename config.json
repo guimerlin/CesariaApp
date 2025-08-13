@@ -1,0 +1,21 @@
+{
+  "useAppShake": true,
+  "usetray": true,
+  "showAppName": true,
+  "instanceLock": true,
+  "awaysClose": false,
+  "shakeIntervalTime": 50,
+  "shakeTimeout": null,
+  "shakeIntensity": 4,
+  "openWithSystem": true,
+  "showDevMenu": false,
+  "convenios": {
+    "Posto 23": "20",
+    "Cinpal": "20",
+    "FSA": "20",
+    "HD": "20",
+    "Florio": "20",
+    "Cesaria":  "01",
+    "Embu Express": "01"
+  }
+}
