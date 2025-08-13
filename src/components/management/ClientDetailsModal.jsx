@@ -97,13 +97,12 @@ const ClientDetailsModal = ({
       );
     }
 
-    // Cabeçalhos da tabela principal
     const fields = ['Vencimento', 'Descrição', 'Valor', 'Multa', 'Valor Restante'];
 
     return (
       <div className="mt-6">
-        <h3 className="mb-3 text-lg font-medium text-gray-800">
-          Tabela de Compras
+        <h3 className="mb-4 text-xl font-semibold text-gray-800">
+          Extrato de Compras
         </h3>
 
         {Object.entries(safeClientDetails).map(([storeId, results]) => {
@@ -120,92 +119,115 @@ const ClientDetailsModal = ({
             );
           }
 
-          // Extrair e processar as vendas do primeiro resultado
           const salesData = results[0]?.VENDAS ? JSON.parse(results[0].VENDAS) : {};
           const sales = Object.entries(salesData);
 
           return (
             <div
               key={storeId}
-              className="mb-6 overflow-hidden rounded-lg border"
+              className="mb-8 overflow-hidden rounded-lg border border-gray-200 shadow-sm"
             >
-              <div className="border-b bg-blue-50 px-4 py-2">
-                <h4 className="text-lg font-bold text-blue-700">
+              <div className="border-b border-gray-200 bg-gray-50 px-6 py-4">
+                <h4 className="text-lg font-bold text-gray-700">
                   Loja: {storeId}
                 </h4>
               </div>
 
               <div className="overflow-x-auto">
-                {/* Cabeçalho da tabela */}
-                <div
-                  className="grid min-w-full items-center gap-4 border-b bg-gray-100 p-3 font-bold"
-                  style={{
-                    gridTemplateColumns: `repeat(${fields.length}, minmax(150px, 1fr))`,
-                  }}
-                >
-                  {fields.map((field) => (
-                    <div
-                      key={field}
-                      className="text-sm font-bold"
-                      title={field}
-                    >
-                      {field}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Linhas da tabela */}
-                {sales.map(([saleId, saleDetails]) => (
-                  <div key={saleId}>
-                    <div
-                      className="grid min-w-full items-center gap-4 border-b p-3 hover:bg-gray-50"
-                      style={{
-                        gridTemplateColumns: `repeat(${fields.length}, minmax(150px, 1fr))`,
-                      }}
-                    >
-                      <div>{formatDate(saleDetails.vencimento)}</div>
-                      <div>{saleDetails.descricao}</div>
-                      <div>{formatCurrency(saleDetails.valor)}</div>
-                      <div>{formatCurrency(saleDetails.multa)}</div>
-                      <div>{formatCurrency(saleDetails.valor_restante)}</div>
-                    </div>
-                    {/* Sub-tabela de itens */}
-                    <div className="pl-8">
-                      <div className="grid grid-cols-3 gap-4 bg-gray-50 p-2 font-bold">
-                        <div>Produto</div>
-                        <div>Código</div>
-                        <div>Valor</div>
-                      </div>
-                      {saleDetails.itens.map((item, index) => (
-                        <div key={index} className="grid grid-cols-3 gap-4 p-2">
-                          <div>{item.produto}</div>
-                          <div>{item.codigo}</div>
-                          <div>{formatCurrency(item.valor_total)}</div>
-                        </div>
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      {fields.map((field) => (
+                        <th
+                          key={field}
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                        >
+                          {field}
+                        </th>
                       ))}
-                    </div>
-                  </div>
-                ))}
-
-                {/* Linha de total */}
-                {results.length > 0 && (
-                  <div
-                    className="grid min-w-full items-center gap-4 border-t-2 border-gray-300 bg-gray-100 p-3 font-bold"
-                    style={{
-                      gridTemplateColumns: `repeat(${fields.length}, minmax(150px, 1fr))`,
-                    }}
-                  >
-                    <div
-                      className="text-right text-sm font-bold"
-                      style={{ gridColumn: `1 / span ${fields.length - 1}` }}
-                    >
-                      Total Gasto:
-                    </div>
-                    <div className="text-sm font-bold text-green-700">
-                      {formatCurrency(results[0].TOTALGASTO)}
-                    </div>
-                  </div>
-                )}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 bg-white">
+                    {sales.map(([saleId, saleDetails]) => (
+                      <React.Fragment key={saleId}>
+                        <tr className="hover:bg-gray-50">
+                          <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                            {formatDate(saleDetails.vencimento)}
+                          </td>
+                          <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                            {saleDetails.descricao}
+                          </td>
+                          <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                            {formatCurrency(saleDetails.valor)}
+                          </td>
+                          <td className="whitespace-nowrap px-6 py-4 text-sm text-red-600">
+                            {formatCurrency(saleDetails.multa)}
+                          </td>
+                          <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
+                            {formatCurrency(saleDetails.valor_restante)}
+                          </td>
+                        </tr>
+                        {saleDetails.itens && saleDetails.itens.length > 0 && (
+                          <tr>
+                            <td colSpan={fields.length} className="p-0">
+                              <div className="bg-gray-50 px-6 py-4">
+                                <h4 className="mb-2 text-sm font-semibold text-gray-700">
+                                  Itens da Compra
+                                </h4>
+                                <table className="min-w-full divide-y divide-gray-200">
+                                  <thead className="bg-gray-200">
+                                    <tr>
+                                      <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
+                                        Produto
+                                      </th>
+                                      <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
+                                        Código
+                                      </th>
+                                      <th className="px-4 py-2 text-right text-xs font-medium uppercase tracking-wider text-gray-600">
+                                        Valor
+                                      </th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-gray-200 bg-white">
+                                    {saleDetails.itens.map((item, index) => (
+                                      <tr key={index}>
+                                        <td className="px-4 py-2 text-sm text-gray-800">
+                                          {item.produto}
+                                        </td>
+                                        <td className="px-4 py-2 text-sm text-gray-800">
+                                          {item.codigo}
+                                        </td>
+                                        <td className="px-4 py-2 text-right text-sm text-gray-800">
+                                          {formatCurrency(item.valor_total)}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </tbody>
+                  {results.length > 0 && (
+                    <tfoot className="bg-gray-100">
+                      <tr>
+                        <td
+                          colSpan={fields.length - 1}
+                          className="px-6 py-3 text-right text-sm font-bold text-gray-700"
+                        >
+                          Total Gasto na Loja:
+                        </td>
+                        <td className="px-6 py-3 text-left text-sm font-bold text-green-700">
+                          {formatCurrency(results[0].TOTALGASTO)}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  )}
+                </table>
               </div>
             </div>
           );
