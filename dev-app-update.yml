@@ -1,0 +1,5 @@
+provider: github
+owner: guimerlin
+repo: cesariaapp
+private: true
+updaterCacheDirName: cesaria-app-updater
