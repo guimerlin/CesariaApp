@@ -492,6 +492,7 @@ ipcMain.handle('query-firebird', async (event, config, searchTerm) => {
           SELECT 
             CODIGO,
             PRODUTO,
+            APRESENTACAO,
             ESTOQUEATUAL,
             PRECOCUSTO,
             PRECOVENDA

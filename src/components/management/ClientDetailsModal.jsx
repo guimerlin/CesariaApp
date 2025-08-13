@@ -41,48 +41,6 @@ const ClientDetailsModal = ({
     return 'Data Inválida';
   };
 
-  const calculateUtilizado = (results) => {
-    if (!results || results.length === 0) return 0;
-
-    const hoje = new Date();
-    const anoAtual = hoje.getFullYear();
-    const mesAtual = hoje.getMonth();
-    const diaAtual = hoje.getDate();
-
-    let dataInicio;
-    if (diaAtual >= 20) {
-      dataInicio = new Date(anoAtual, mesAtual, 20, 0, 0, 0);
-    } else {
-      let anoInicio = anoAtual;
-      let mesInicio = mesAtual - 1;
-      if (mesInicio < 0) {
-        mesInicio = 11;
-        anoInicio -= 1;
-      }
-      dataInicio = new Date(anoInicio, mesInicio, 20, 0, 0, 0);
-    }
-
-    let total = 0;
-    results.forEach((result) => {
-      const cancelada = String(result.CANCELADA || '').trim();
-      const dataVenda = result.DATA ? new Date(result.DATA) : null;
-      const tipo = String(result.TIPO || '').trim();
-
-      if (
-        cancelada !== 'Y' &&
-        tipo === 'PRAZO' &&
-        dataVenda &&
-        !isNaN(dataVenda.getTime()) &&
-        dataVenda >= dataInicio
-      ) {
-        const valorTotal = Number(result.VALORTOTAL) || 0;
-        total += valorTotal;
-      }
-    });
-
-    return total;
-  };
-
   /**
    * Renderiza a tabela de compras do cliente no formato planilha
    */

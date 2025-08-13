@@ -2,7 +2,7 @@
   "homepage": ".",
   "name": "cesaria-app",
   "private": true,
-  "version": "1.0.2",
+  "version": "1.0.3",
   "main": "electron-main.js",
   "type": "module",
   "scripts": {
@@ -90,7 +90,7 @@
       "owner": "guimerlin",
       "repo": "cesariaapp",
       "private": false,
-      "token": "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"
+      "token": "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"
     }
   }
 }
