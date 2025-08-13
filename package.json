@@ -2,7 +2,7 @@
   "homepage": ".",
   "name": "cesaria-app",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "main": "electron-main.js",
   "type": "module",
   "scripts": {
@@ -11,7 +11,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "dist": "npm run build && electron-builder"
+    "dist": "npm run build && electron-builder",
+    "publish": "electron-builder --publish always"
   },
   "author": "LGBDS",
   "license": "ISC",
@@ -19,6 +20,8 @@
     "@tailwindcss/vite": "^4.1.11",
     "bootstrap-icons": "^1.13.1",
     "class-variance-authority": "^0.7.1",
+    "electron-log": "^5.4.2",
+    "electron-updater": "^6.6.2",
     "firebase": "^12.0.0",
     "lucide-react": "^0.525.0",
     "node-firebird": "^1.1.9",
@@ -81,6 +84,13 @@
       "electron-main.js",
       "electron-preload.js",
       "assets/**/*"
-    ]
+    ],
+    "publish": {
+      "provider": "github",
+      "owner": "guimerlin",
+      "repo": "cesariaapp",
+      "private": false,
+      "token": "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"
+    }
   }
 }

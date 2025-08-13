@@ -237,7 +237,7 @@ const ClientDetailsModal = ({
   };
 
   return (
-    <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75">
       <div className="mx-4 max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-lg bg-white shadow-xl">
         {/* Header */}
         <div className="border-b border-gray-200 p-6">
@@ -338,7 +338,6 @@ const ClientDetailsModal = ({
                     <div className="space-y-4">
                       {Object.entries(safeClientDetails).map(
                         ([storeId, details]) => {
-                          const utilizadoTotal = calculateUtilizado(details);
                           const primeiroRegistro = details[0] || {};
 
                           return (
