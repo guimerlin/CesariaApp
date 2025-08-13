@@ -608,6 +608,7 @@ ORDER BY c.NOME;`;
               break;
           }
 
+          
           if (!sql) {
             db.detach();
             return resolve({
