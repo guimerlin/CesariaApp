@@ -2,7 +2,7 @@
   "homepage": ".",
   "name": "cesaria-app",
   "private": true,
-  "version": "1.0.3",
+  "version": "1.0.7",
   "main": "electron-main.js",
   "type": "module",
   "scripts": {
@@ -76,7 +76,7 @@
       "perMachine": true,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "runAfterFinish": false,
+      "runAfterFinish": true,
       "deleteAppDataOnUninstall": true
     },
     "files": [
@@ -90,7 +90,8 @@
       "owner": "guimerlin",
       "repo": "cesariaapp",
       "private": false,
-      "token": "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"
+      "token": "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",
+      "releaseType": "release"
     }
   }
 }
