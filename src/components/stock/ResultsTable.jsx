@@ -66,7 +66,7 @@ const ResultsTable = ({ searchResults, onRequestItem }) => {
                     {availableProducts.map((product, index) => (
                       <ProductRow
                         key={`${loja}-${product.CODIGO || index}`}
-                        product={product}
+                        product={{ ...product, storeId: loja }}
                         onRequestClick={handleRequestClick}
                       />
                     ))}

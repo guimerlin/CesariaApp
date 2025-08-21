@@ -1,5 +1,8 @@
 import React, { useState, useCallback } from 'react';
-import { SearchContextProvider, useSearchContext } from '../contexts/SearchContext';
+import {
+  SearchContextProvider,
+  useSearchContext,
+} from '../contexts/SearchContext';
 import { useChat } from '../contexts/ChatContext';
 import SearchSection from '../components/stock/SearchSection';
 import StatusArea from '../components/stock/StatusArea';
@@ -7,8 +10,15 @@ import ResultsTable from '../components/stock/ResultsTable';
 import QuantityModal from '../components/stock/QuantityModal';
 
 const SearchContent = () => {
-  const { currentUser } = useChat();
-  const { searchResults, isLoading, statusMessage, search, clearSearch } = useSearchContext();
+  const { currentUser, dbService } = useChat();
+  const {
+    searchResults,
+    isLoading,
+    statusMessage,
+    search,
+    clearSearch,
+    sendChatMessage,
+  } = useSearchContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isQuantityModalOpen, setIsQuantityModalOpen] = useState(false);
@@ -29,16 +39,12 @@ const SearchContent = () => {
     setIsQuantityModalOpen(true);
   }, []);
 
-  const handleQuantityConfirm = useCallback(
-    async (product, quantity) => {
-      // This part needs to be implemented based on the new logic
-      // For now, it will just show an alert.
-      alert(
-        `Solicitação de ${quantity} unidade(s) do produto "${product.PRODUTO}" enviada para ${product.storeId}.`
-      );
-    },
-    []
-  );
+  const handleQuantityConfirm = useCallback(async (product, quantity) => {
+    sendChatMessage(product.storeId, product, quantity, dbService, currentUser);
+    alert(
+      `Solicitação de ${quantity} unidade(s) do produto "${product.PRODUTO}" enviada para ${product.storeId}.`,
+    );
+  }, []);
 
   if (!currentUser) {
     return (
