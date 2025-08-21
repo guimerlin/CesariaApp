@@ -1,16 +1,10 @@
-// components/stock/SearchSection.jsx
 import React from 'react';
 
 const SearchSection = ({
-  onlineStores,
-  selectedStore,
-  setSelectedStore,
   searchTerm,
   setSearchTerm,
-  searchAllStores,
-  setSearchAllStores,
   onSearch,
-  isLoading
+  isLoading,
 }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -29,37 +23,9 @@ const SearchSection = ({
     <div className="mb-6">
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 items-end">
-          {/* Seletor de Loja */}
           <div>
-            <label 
-              htmlFor="storeSelect" 
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Consultar na Loja:
-            </label>
-            <select
-              id="storeSelect"
-              value={selectedStore}
-              onChange={(e) => setSelectedStore(e.target.value)}
-              disabled={searchAllStores || onlineStores.length === 0}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400 disabled:bg-gray-100 disabled:cursor-not-allowed"
-            >
-              {onlineStores.length === 0 ? (
-                <option>Nenhuma loja online</option>
-              ) : (
-                onlineStores.map((store) => (
-                  <option key={store} value={store}>
-                    {store}
-                  </option>
-                ))
-              )}
-            </select>
-          </div>
-
-          {/* Campo de Busca */}
-          <div>
-            <label 
-              htmlFor="productSearchInput" 
+            <label
+              htmlFor="productSearchInput"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
               Nome do Produto:
@@ -76,10 +42,9 @@ const SearchSection = ({
             />
           </div>
 
-          {/* Botão de Busca */}
           <button
             type="submit"
-            disabled={isLoading || !searchTerm.trim() || (onlineStores.length === 0 && !searchAllStores)}
+            disabled={isLoading || !searchTerm.trim()}
             className="bg-red-600 text-white p-2 rounded-lg font-semibold hover:bg-red-700 transition-colors duration-200 h-10 disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             {isLoading ? (
@@ -95,25 +60,9 @@ const SearchSection = ({
             )}
           </button>
         </div>
-
-        {/* Checkbox para buscar em todas as lojas */}
-        <label className="flex items-center gap-2 mb-2 cursor-pointer">
-          <input
-            type="checkbox"
-            id="searchAllStores"
-            checked={searchAllStores}
-            onChange={(e) => setSearchAllStores(e.target.checked)}
-            disabled={isLoading}
-            className="rounded border-gray-300 text-red-600 focus:ring-red-500 disabled:cursor-not-allowed"
-          />
-          <span className="text-sm text-gray-700">
-            Buscar em todas as lojas ({onlineStores.length} online)
-          </span>
-        </label>
       </form>
     </div>
   );
 };
 
 export default SearchSection;
-

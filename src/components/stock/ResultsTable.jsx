@@ -1,7 +1,7 @@
 // components/stock/ResultsTable.jsx
 import React from 'react';
 
-const ResultsTable = ({ searchResults, onRequestItem, getAvailableProducts }) => {
+const ResultsTable = ({ searchResults, onRequestItem }) => {
   const hasResults = Object.keys(searchResults).length > 0;
 
   if (!hasResults) {
@@ -16,7 +16,7 @@ const ResultsTable = ({ searchResults, onRequestItem, getAvailableProducts }) =>
     <div className="overflow-x-auto w-full">
       <div className="space-y-6">
         {Object.entries(searchResults).map(([loja, produtos]) => {
-          const availableProducts = getAvailableProducts(produtos);
+          const availableProducts = produtos;
           
           if (availableProducts.length === 0) {
             return null;
@@ -66,7 +66,7 @@ const ResultsTable = ({ searchResults, onRequestItem, getAvailableProducts }) =>
                     {availableProducts.map((product, index) => (
                       <ProductRow
                         key={`${loja}-${product.CODIGO || index}`}
-                        product={product}
+                        product={{ ...product, storeId: loja }}
                         onRequestClick={handleRequestClick}
                       />
                     ))}
@@ -103,11 +103,11 @@ const ProductRow = ({ product, onRequestClick }) => {
         {product.CODIGO || 'N/A'}
       </td>
       <td className="px-4 py-3 text-sm text-gray-900 max-w-xs">
-        <div 
-          className="truncate" 
-          title={product.PRODUTO || ''}
+        <div
+          className="truncate"
+          title={`${product.PRODUTO || ''} ${product.APRESENTACAO || ''}`}
         >
-          {product.PRODUTO || 'N/A'}
+          {`${product.PRODUTO || 'N/A'} ( ${product.APRESENTACAO || '/'} )`}
         </div>
       </td>
       <td className="px-4 py-3 text-sm text-gray-900 text-center">

@@ -1,7 +1,7 @@
 {
   "useAppShake": true,
   "usetray": true,
-  "showAppName": true,
+  "showAppName": false,
   "instanceLock": true,
   "awaysClose": false,
   "shakeIntervalTime": 50,
@@ -9,13 +9,12 @@
   "shakeIntensity": 4,
   "openWithSystem": true,
   "showDevMenu": false,
-  "convenios": {
-    "Posto 23": "20",
-    "Cinpal": "20",
-    "FSA": "20",
-    "HD": "20",
-    "Florio": "20",
-    "Cesaria":  "01",
-    "Embu Express": "01"
+  "useAPI": true,
+  "endpoints": {
+    "Parque Pinheiros": "pinheiros.cesaria.shop",
+    "Vista Alegre": "vista.cesaria.shop",
+    "Taboão": "taboao.cesaria.shop",
+    "Jardim Salete": "salete.cesaria.shop",
+    "Jardim da Luz": "luz.cesaria.shop"
   }
 }

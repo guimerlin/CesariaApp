@@ -56,7 +56,7 @@ const MessageBubble = ({
             {message.urgent ? ' (URGENTE)' : ''}
           </div>
           <div
-            className="text-sm"
+            className="text-sm break-words"
             dangerouslySetInnerHTML={{ __html: message.text }}
           />
           <div className="mt-1 text-xs opacity-70">
