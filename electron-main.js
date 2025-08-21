@@ -11,13 +11,14 @@ import {
   shell,
   Tray,
   Menu,
-net
+  net,
 } from 'electron';
 
 import fs from 'node:fs';
 // import Firebird from 'node-firebird';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import APIStart from './server.js';
 
 // --- CÓDIGO NOVO PARA ATUALIZAÇÃO AUTOMÁTICA ---
 // A importação foi corrigida para o formato padrão do 'electron-updater'
@@ -26,7 +27,6 @@ import log from 'electron-log';
 import electronUpdaterPkg from 'electron-updater';
 const autoUpdater = electronUpdaterPkg.autoUpdater;
 // --- FIM DO CÓDIGO NOVO ---
-
 
 ///////////////////////
 
@@ -109,6 +109,13 @@ function loadConfig() {
 
 loadConfig();
 
+function STARTAPI() {
+  if (!configFile.useAPI) return;
+  APIStart();
+}
+
+STARTAPI();
+
 /////////////////////////////////////
 
 ////////// BLOQUEIO DE INSTANCIA UNICA
@@ -158,8 +165,6 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'));
   }
 
-  
-
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
     if (mainWindow) {
@@ -206,23 +211,14 @@ function createTray() {
   const iconPath = path.join(__dirname, 'assets', 'cesaria.ico');
   tray = new Tray(iconPath);
 
-  // CLIQUE DIREITO
-  const contextMenu = Menu.buildFromTemplate([
+  // Define o template base do menu
+  let menuTemplate = [
     {
       label: 'Abrir',
       click: () => {
         mainWindow.show();
       },
     },
-    // {
-    //   label: 'Configurar Firebird',
-    //   click: () => {
-    //     if (mainWindow) {
-    //       console.log('[TRAY] Abrindo modal de configuração do Firebird via tray.');
-    //       mainWindow.webContents.send('onOpenFirebirdConfig');
-    //     }
-    //   },
-    // },
     { type: 'separator' },
     {
       label: 'Forçar Atualização da Página',
@@ -249,7 +245,18 @@ function createTray() {
         app.quit();
       },
     },
-  ]);
+  ];
+
+  // Adiciona os itens da API no início do menu se a opção estiver ativa
+  if (configFile.useAPI) {
+    menuTemplate.unshift(
+      { label: 'API Rodando', enabled: false },
+      { type: 'separator' },
+    );
+  }
+
+  // CLIQUE DIREITO
+  const contextMenu = Menu.buildFromTemplate(menuTemplate);
 
   tray.setToolTip('Cesaria App em Execução!');
   tray.setContextMenu(contextMenu);
@@ -260,7 +267,7 @@ function createTray() {
       mainWindow.hide();
     } else {
       mainWindow.show();
-      mainWindow.focus(); // <--- Adicione isso!
+      mainWindow.focus();
     }
   });
 }
@@ -356,7 +363,10 @@ app.whenReady().then(() => {
   }
 
   // --- CÓDIGO NOVO PARA ATUALIZAÇÃO AUTOMÁTICA ---
-  const updatePendingFlagPath = path.join(app.getPath('userData'), 'update-pending.flag');
+  const updatePendingFlagPath = path.join(
+    app.getPath('userData'),
+    'update-pending.flag',
+  );
 
   // Verifica se há atualizações disponíveis
   autoUpdater.checkForUpdatesAndNotify();
@@ -389,7 +399,10 @@ app.whenReady().then(() => {
 
   // Ouve pelo evento 'app-ready' da interface para verificar se há uma atualização pendente
   ipcMain.on('app-ready', () => {
-    const updatePendingFlagPath = path.join(app.getPath('userData'), 'update-pending.flag');
+    const updatePendingFlagPath = path.join(
+      app.getPath('userData'),
+      'update-pending.flag',
+    );
     if (fs.existsSync(updatePendingFlagPath)) {
       mainWindow.webContents.send('update-pending');
     }
@@ -535,14 +548,14 @@ ipcMain.handle('get-audio-data', async (event, fileName) => {
 
 //         // Consulta SQL para buscar produtos por nome ou código
 //         const sql = `
-//           SELECT 
+//           SELECT
 //             CODIGO,
 //             PRODUTO,
 //             APRESENTACAO,
 //             ESTOQUEATUAL,
 //             PRECOCUSTO,
 //             PRECOVENDA
-//           FROM PRODUTOS 
+//           FROM PRODUTOS
 //           WHERE (UPPER(PRODUTO) CONTAINING UPPER(?) OR UPPER(CODIGO) CONTAINING UPPER(?))
 //           AND ESTOQUEATUAL > 0
 //           ORDER BY PRODUTO
@@ -601,10 +614,8 @@ ipcMain.handle('get-audio-data', async (event, fileName) => {
 //             return resolve({ success: false, error: err.message });
 //           }
 
-
 //           let sql = '';
 //           let params = [];
-
 
 //           switch (tableName.toUpperCase()) {
 //             case 'DADOSPREVENDA':
@@ -724,7 +735,6 @@ ipcMain.handle('get-audio-data', async (event, fileName) => {
 //               break;
 //           }
 
-          
 //           if (!sql) {
 //             db.detach();
 //             return resolve({
@@ -744,13 +754,12 @@ ipcMain.handle('get-audio-data', async (event, fileName) => {
 //               console.debug(params);
 //               return resolve({ success: false, error: err.message });
 //             }
-            
+
 //             console.log(
 //               '[ELECTRON] Resultados da consulta de tabela Firebird (Gerenciamento):',
 //             );
 //             console.log(result);
 //             console.debug(params);
-
 
 //             // FORMATAR DATA DOS RESULTADOS
 

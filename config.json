@@ -9,6 +9,7 @@
   "shakeIntensity": 4,
   "openWithSystem": true,
   "showDevMenu": false,
+  "useAPI": true,
   "endpoints": {
     "Parque Pinheiros": "pinheiros.cesaria.shop",
     "Vista Alegre": "vista.cesaria.shop",
