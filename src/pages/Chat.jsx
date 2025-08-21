@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import ChatList from '../components/chat/ChatList';
 import ConversationPanel from '../components/chat/ConversationPanel';
 
@@ -16,8 +16,6 @@ const Chat = ({
   onSendMessage,
   onSendUrgentMessage,
   onReaction,
-  onOpenStockQuery,
-  onOpenManagement,
 }) => {
   return (
     <div className="flex h-full flex-1 flex-row">
@@ -28,8 +26,6 @@ const Chat = ({
         urgentNotifications={urgentNotifications}
         currentUser={currentUser}
         onChatSelect={onChatSelect}
-        onOpenStockQuery={onOpenStockQuery}
-        onOpenManagement={onOpenManagement}
       />
 
       <ConversationPanel
