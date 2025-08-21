@@ -11,6 +11,7 @@ import {
   shell,
   Tray,
   Menu,
+net
 } from 'electron';
 
 import fs from 'node:fs';
@@ -421,6 +422,41 @@ app.on('activate', () => {
 
 ipcMain.handle('get-config', () => {
   return configFile;
+});
+
+ipcMain.handle('fetch-url', async (event, url) => {
+  return new Promise((resolve, reject) => {
+    const request = net.request(url);
+    let body = '';
+
+    request.on('response', (response) => {
+      response.on('data', (chunk) => {
+        body += chunk.toString();
+      });
+
+      response.on('end', () => {
+        try {
+          const json = JSON.parse(body);
+          resolve({ success: true, data: json });
+        } catch (error) {
+          console.error('[ELECTRON] Erro ao fazer parse do JSON:', error);
+          reject({ success: false, error: 'Invalid JSON response' });
+        }
+      });
+
+      response.on('error', (error) => {
+        console.error('[ELECTRON] Erro na resposta da requisição:', error);
+        reject({ success: false, error: error.message });
+      });
+    });
+
+    request.on('error', (error) => {
+      console.error('[ELECTRON] Erro na requisição:', error);
+      reject({ success: false, error: error.message });
+    });
+
+    request.end();
+  });
 });
 
 ///////////////////////////////////////////////////////////////////////////////
