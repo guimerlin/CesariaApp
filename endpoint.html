@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cesária Digital</title>
+    <meta name="description" content="Sistema moderno de gestão para farmácias e estabelecimentos comerciais">
+    <link rel="icon" href="/icon.ico" type="image/x-icon">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Montserrat:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --background: 20 14.3% 4.1%;
+            --foreground: 0 0% 95%;
+            --card: 24 9.8% 10%;
+            --card-foreground: 0 0% 95%;
+            --primary: 346.8 77.2% 49.8%;
+            --primary-foreground: 355.7 100% 97.3%;
+            --secondary: 240 3.7% 15.9%;
+            --secondary-foreground: 0 0% 98%;
+            --muted: 0 0% 15%;
+            --muted-foreground: 240 5% 64.9%;
+            --accent: 12 6.5% 15.1%;
+            --accent-foreground: 0 0% 98%;
+            --border: 240 3.7% 15.9%;
+            --input: 240 3.7% 15.9%;
+            --ring: 346.8 77.2% 49.8%;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: hsl(var(--background));
+            color: hsl(var(--foreground));
+            font-weight: 300;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 600;
+        }
+        
+        .gradient-text {
+            background: linear-gradient(to right, #ef4444, #f87171, #d1d5db);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .glassmorphic-card {
+            background-color: rgba(24, 24, 27, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.75rem;
+            transition: all 300ms ease-in-out;
+        }
+        
+        .glassmorphic-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn-primary {
+            background-color: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            border: none;
+            cursor: pointer;
+            transition: all 300ms ease-in-out;
+            font-weight: 500;
+        }
+        
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4);
+        }
+        
+        .btn-secondary {
+            background-color: hsl(var(--secondary));
+            color: hsl(var(--secondary-foreground));
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            border: 1px solid hsl(var(--border));
+            cursor: pointer;
+            transition: all 300ms ease-in-out;
+            font-weight: 500;
+        }
+        
+        .btn-secondary:hover {
+            background-color: hsl(var(--accent));
+            transform: scale(1.05);
+        }
+        
+        .input-field {
+            background-color: hsl(var(--input));
+            border: 1px solid hsl(var(--border));
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: hsl(var(--foreground));
+            width: 100%;
+            transition: all 300ms ease-in-out;
+        }
+        
+        .input-field:focus {
+            outline: none;
+            border-color: hsl(var(--ring));
+            box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2);
+        }
+        
+        .result-card {
+            background-color: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            transition: all 300ms ease-in-out;
+        }
+        
+        .result-card:hover {
+            border-color: hsl(var(--ring));
+            transform: translateY(-2px);
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: hsl(var(--primary));
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .hidden { display: none; }
+        .error { color: #ef4444; }
+        .success { color: #22c55e; }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Header -->
+    <header class="border-b border-gray-800 bg-black/50 backdrop-blur-sm sticky top-0 z-50">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <img src="/icon.ico" alt="Cesaria Logo" class="w-8 h-8">
+                    <h1 class="text-2xl font-bold gradient-text">Cesária Digital</h1>
+                </div>
+                <nav class="hidden md:flex space-x-6">
+                    <a href="#produtos" class="text-gray-300 hover:text-white transition-colors">Produtos</a>
+                    <a href="#convenios" class="text-gray-300 hover:text-white transition-colors">Convênios</a>
+                    <a href="#estoque" class="text-gray-300 hover:text-white transition-colors">Estoque</a>
+                    <a href="#cadastro" class="text-gray-300 hover:text-white transition-colors">Cadastro</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="py-20 px-6 text-center">
+        <div class="container mx-auto max-w-4xl">
+            <h1 class="text-5xl md:text-7xl font-bold mb-6">
+                Cesária Digital
+                <span class="gradient-text block">Multilojas</span>
+            </h1>
+            <p class="text-xl text-gray-400 mb-8 max-w-2xl mx-auto">
+                Busque por produtos e Convênios de forma rápida e intuitiva
+            </p>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-12 max-w-6xl">
+        
+        <!-- Produtos Section -->
+        <section id="produtos" class="mb-16">
+            <div class="glassmorphic-card p-8">
+                <h2 class="text-3xl font-bold mb-6 gradient-text">🔍 Buscar Produtos</h2>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <!-- Busca Simples -->
+                    <div>
+                        <h3 class="text-xl font-semibold mb-4">Busca Rápida (Com Estoque)</h3>
+                        <div class="space-y-4">
+                            <input type="text" id="searchProduct" class="input-field" placeholder="Digite o código ou nome do produto...">
+                            <button onclick="searchProducts()" class="btn-primary w-full">
+                                <span id="searchBtn">Buscar Produtos</span>
+                                <span id="searchLoading" class="loading hidden"></span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Busca Detalhada -->
+                    <div>
+                        <h3 class="text-xl font-semibold mb-4">Informações Completas</h3>
+                        <div class="space-y-4">
+                            <input type="text" id="searchProductInfo" class="input-field" placeholder="Digite o código ou nome do produto...">
+                            <button onclick="searchProductInfo()" class="btn-primary w-full">
+                                <span id="searchInfoBtn">Buscar Informações</span>
+                                <span id="searchInfoLoading" class="loading hidden"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Resultados -->
+                <div id="productResults" class="mt-8"></div>
+            </div>
+        </section>
+
+        <!-- Convênios Section -->
+        <section id="convenios" class="mb-16">
+            <div class="glassmorphic-card p-8">
+                <h2 class="text-3xl font-bold mb-6 gradient-text">👥 Consultar Convênios</h2>
+                <div class="space-y-4 max-w-md">
+                    <input type="text" id="searchConvenio" class="input-field" placeholder="Nome do cliente...">
+                    <input type="password" id="convenioPassword" class="input-field" placeholder="Senha de acesso...">
+                    <button onclick="searchConvenio()" class="btn-primary w-full">
+                        <span id="convenioBtn">Consultar Débitos</span>
+                        <span id="convenioLoading" class="loading hidden"></span>
+                    </button>
+                </div>
+                
+                <!-- Resultados -->
+                <div id="convenioResults" class="mt-8"></div>
+            </div>
+        </section>
+
+        <!-- Estoque Section -->
+        <section id="estoque" class="mb-16">
+            <div class="glassmorphic-card p-8">
+                <h2 class="text-3xl font-bold mb-6 gradient-text">📦 Atualizar Estoque</h2>
+                <div class="grid md:grid-cols-2 gap-6 max-w-2xl">
+                    <input type="text" id="updateBarcode" class="input-field" placeholder="Código do produto...">
+                    <input type="number" id="updateQuantity" class="input-field" placeholder="Nova quantidade...">
+                    <input type="text" id="updateUserCode" class="input-field" placeholder="Código do usuário...">
+                    <input type="password" id="updatePassword" class="input-field" placeholder="Senha...">
+                </div>
+                <button onclick="updateStock()" class="btn-primary mt-4">
+                    <span id="updateBtn">Atualizar Estoque</span>
+                    <span id="updateLoading" class="loading hidden"></span>
+                </button>
+                
+                <!-- Resultado -->
+                <div id="updateResult" class="mt-6"></div>
+            </div>
+        </section>
+
+        <!-- Cadastro Section -->
+        <section id="cadastro" class="mb-16">
+            <div class="glassmorphic-card p-8">
+                <h2 class="text-3xl font-bold mb-6 gradient-text">➕ Cadastrar Produto</h2>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <input type="text" id="newProductCode" class="input-field" placeholder="Código do produto..." required>
+                    <input type="text" id="newProductName" class="input-field" placeholder="Nome do produto...">
+                    <input type="text" id="newProductPresentation" class="input-field" placeholder="Apresentação...">
+                    <input type="number" id="newProductCostPrice" class="input-field" placeholder="Preço de custo..." step="0.01">
+                    <input type="number" id="newProductSalePrice" class="input-field" placeholder="Preço de venda..." step="0.01">
+                    <input type="text" id="newUserCode" class="input-field" placeholder="Código do usuário...">
+                    <input type="password" id="newPassword" class="input-field" placeholder="Senha...">
+                </div>
+                <button onclick="registerProduct()" class="btn-primary mt-4">
+                    <span id="registerBtn">Cadastrar Produto</span>
+                    <span id="registerLoading" class="loading hidden"></span>
+                </button>
+                
+                <!-- Resultado -->
+                <div id="registerResult" class="mt-6"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-gray-800 bg-black/50 backdrop-blur-sm py-8">
+        <div class="container mx-auto px-6 text-center">
+            <div class="flex items-center justify-center space-x-3 mb-4">
+                <img src="/icon.ico" alt="Cesaria Logo" class="w-6 h-6">
+                <span class="text-xl font-bold gradient-text">Cesaria</span>
+            </div>
+            <p class="text-gray-400">Sistema de Consultas © 2025</p>
+        </div>
+    </footer>
+
+    <script>
+        const API_BASE = window.location.origin;
+
+        // Função para buscar produtos com estoque
+        async function searchProducts() {
+            const searchTerm = document.getElementById('searchProduct').value.trim();
+            if (!searchTerm) {
+                alert('Digite um termo de busca');
+                return;
+            }
+
+            toggleLoading('search', true);
+            
+            try {
+                const response = await fetch(`${API_BASE}/produto/${encodeURIComponent(searchTerm)}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayProductResults(data, 'simple');
+                } else {
+                    displayError('productResults', data.message || 'Nenhum produto encontrado');
+                }
+            } catch (error) {
+                displayError('productResults', 'Erro ao buscar produtos: ' + error.message);
+            } finally {
+                toggleLoading('search', false);
+            }
+        }
+
+        // Função para buscar informações completas do produto
+        async function searchProductInfo() {
+            const searchTerm = document.getElementById('searchProductInfo').value.trim();
+            if (!searchTerm) {
+                alert('Digite um termo de busca');
+                return;
+            }
+
+            toggleLoading('searchInfo', true);
+            
+            try {
+                const response = await fetch(`${API_BASE}/produto/info/${encodeURIComponent(searchTerm)}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayProductResults(data, 'detailed');
+                } else {
+                    displayError('productResults', 'Nenhum produto encontrado');
+                }
+            } catch (error) {
+                displayError('productResults', 'Erro ao buscar informações: ' + error.message);
+            } finally {
+                toggleLoading('searchInfo', false);
+            }
+        }
+
+        // Função para buscar convênios
+        async function searchConvenio() {
+            const searchTerm = document.getElementById('searchConvenio').value.trim();
+            const password = document.getElementById('convenioPassword').value.trim();
+            
+            if (!searchTerm || !password) {
+                alert('Digite o nome do cliente e a senha');
+                return;
+            }
+
+            toggleLoading('convenio', true);
+            
+            try {
+                const response = await fetch(`${API_BASE}/convenio/${encodeURIComponent(searchTerm)}/${encodeURIComponent(password)}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayConvenioResults(data);
+                } else {
+                    displayError('convenioResults', data.message || 'Nenhum convênio encontrado');
+                }
+            } catch (error) {
+                displayError('convenioResults', 'Erro ao buscar convênio: ' + error.message);
+            } finally {
+                toggleLoading('convenio', false);
+            }
+        }
+
+        // Função para atualizar estoque
+        async function updateStock() {
+            const barcode = document.getElementById('updateBarcode').value.trim();
+            const quantity = document.getElementById('updateQuantity').value.trim();
+            const userCode = document.getElementById('updateUserCode').value.trim();
+            const password = document.getElementById('updatePassword').value.trim();
+            
+            if (!barcode || !quantity || !userCode || !password) {
+                alert('Preencha todos os campos');
+                return;
+            }
+
+            toggleLoading('update', true);
+            
+            try {
+                const response = await fetch(`${API_BASE}/update/produto`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        BARCODE: barcode,
+                        QUANTITY: parseInt(quantity),
+                        USERCODE: userCode,
+                        PASSWORD: password
+                    })
+                });
+                
+                if (response.ok) {
+                    displaySuccess('updateResult', 'Estoque atualizado com sucesso!');
+                    // Limpar campos
+                    document.getElementById('updateBarcode').value = '';
+                    document.getElementById('updateQuantity').value = '';
+                    document.getElementById('updateUserCode').value = '';
+                    document.getElementById('updatePassword').value = '';
+                } else {
+                    const errorText = await response.text();
+                    displayError('updateResult', `Erro ao atualizar estoque: ${response.status}`);
+                }
+            } catch (error) {
+                displayError('updateResult', 'Erro ao atualizar estoque: ' + error.message);
+            } finally {
+                toggleLoading('update', false);
+            }
+        }
+
+        // Função para cadastrar produto
+        async function registerProduct() {
+            const code = document.getElementById('newProductCode').value.trim();
+            const name = document.getElementById('newProductName').value.trim();
+            const presentation = document.getElementById('newProductPresentation').value.trim();
+            const costPrice = document.getElementById('newProductCostPrice').value.trim();
+            const salePrice = document.getElementById('newProductSalePrice').value.trim();
+            const userCode = document.getElementById('newUserCode').value.trim();
+            const password = document.getElementById('newPassword').value.trim();
+            
+            if (!code || !userCode || !password) {
+                alert('Código do produto, código do usuário e senha são obrigatórios');
+                return;
+            }
+
+            toggleLoading('register', true);
+            
+            const productData = {
+                CODIGO: code,
+                USERCODE: userCode,
+                PASSWORD: password
+            };
+            
+            if (name) productData.PRODUTO = name;
+            if (presentation) productData.APRESENTACAO = presentation;
+            if (costPrice) productData.PRECOCUSTO = parseFloat(costPrice);
+            if (salePrice) productData.PRECOVENDA = parseFloat(salePrice);
+            
+            try {
+                const response = await fetch(`${API_BASE}/produto/cadastro`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(productData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displaySuccess('registerResult', data.message);
+                    // Limpar campos
+                    document.getElementById('newProductCode').value = '';
+                    document.getElementById('newProductName').value = '';
+                    document.getElementById('newProductPresentation').value = '';
+                    document.getElementById('newProductCostPrice').value = '';
+                    document.getElementById('newProductSalePrice').value = '';
+                    document.getElementById('newUserCode').value = '';
+                    document.getElementById('newPassword').value = '';
+                } else {
+                    displayError('registerResult', data.error || 'Erro ao cadastrar produto');
+                }
+            } catch (error) {
+                displayError('registerResult', 'Erro ao cadastrar produto: ' + error.message);
+            } finally {
+                toggleLoading('register', false);
+            }
+        }
+
+        // Função para exibir resultados de produtos
+        function displayProductResults(products, type) {
+            const container = document.getElementById('productResults');
+            
+            if (!products || products.length === 0) {
+                container.innerHTML = '<p class="text-gray-400">Nenhum produto encontrado.</p>';
+                return;
+            }
+            
+            let html = `<h3 class="text-xl font-semibold mb-4">Resultados (${products.length} produto${products.length > 1 ? 's' : ''}):</h3>`;
+            
+            products.forEach(product => {
+                html += `
+                    <div class="result-card">
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <h4 class="font-semibold text-lg text-blue-400">${product.PRODUTO || 'N/A'}</h4>
+                                <p class="text-gray-300"><strong>Código:</strong> ${product.CODIGO || 'N/A'}</p>
+                                ${product.APRESENTACAO ? `<p class="text-gray-300"><strong>Apresentação:</strong> ${product.APRESENTACAO}</p>` : ''}
+                            </div>
+                            <div class="text-right">
+                                ${product.ESTOQUEATUAL !== undefined ? `<p class="text-green-400"><strong>Estoque:</strong> ${product.ESTOQUEATUAL}</p>` : ''}
+                                ${product.PRECOCUSTO ? `<p class="text-gray-300"><strong>Custo:</strong> R$ ${parseFloat(product.PRECOCUSTO).toFixed(2)}</p>` : ''}
+                                ${product.PRECOVENDA ? `<p class="text-yellow-400"><strong>Venda:</strong> R$ ${parseFloat(product.PRECOVENDA).toFixed(2)}</p>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        // Função para exibir resultados de convênios
+        function displayConvenioResults(convenios) {
+            const container = document.getElementById('convenioResults');
+            
+            if (!convenios || convenios.length === 0) {
+                container.innerHTML = '<p class="text-gray-400">Nenhum convênio encontrado.</p>';
+                return;
+            }
+            
+            let html = `<h3 class="text-xl font-semibold mb-4">Informações do Convênio:</h3>`;
+            
+            convenios.forEach(convenio => {
+                const vendas = convenio.VENDAS ? JSON.parse(convenio.VENDAS) : {};
+                
+                html += `
+                    <div class="result-card">
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <h4 class="font-semibold text-lg text-blue-400">${convenio.NOME}</h4>
+                                <p class="text-gray-300"><strong>Documento:</strong> ${convenio.DOCUMENTO || 'N/A'}</p>
+                                <p class="text-gray-300"><strong>Matrícula:</strong> ${convenio.MATRICULA || 'N/A'}</p>
+                                <p class="text-gray-300"><strong>Convênio:</strong> ${convenio.CONVENIO || 'N/A'}</p>
+                                <p class="text-gray-300"><strong>Status:</strong> ${convenio.BLOQUEIO === 'S' ? '🔒 Bloqueado' : '✅ Ativo'}</p>
+                            </div>
+                            <div>
+                                <p class="text-red-400"><strong>Total Gasto:</strong> R$ ${parseFloat(convenio.TOTALGASTO || 0).toFixed(2)}</p>
+                                <p class="text-yellow-400"><strong>Multa:</strong> R$ ${parseFloat(convenio.MULTA || 0).toFixed(2)}</p>
+                                <p class="text-green-400"><strong>Disponível:</strong> R$ ${parseFloat(convenio.DISPONIVEL || 0).toFixed(2)}</p>
+                                <p class="text-gray-300"><strong>Limite:</strong> R$ ${parseFloat(convenio.LIMITE || 0).toFixed(2)}</p>
+                            </div>
+                        </div>
+                        
+                        ${Object.keys(vendas).length > 0 ? `
+                            <div class="mt-4 pt-4 border-t border-gray-700">
+                                <h5 class="font-semibold mb-2">Vendas Pendentes:</h5>
+                                <div class="space-y-2 max-h-60 overflow-y-auto">
+                                    ${Object.entries(vendas).map(([vendaId, venda]) => `
+                                        <div class="bg-gray-800 p-3 rounded">
+                                            <p class="text-sm"><strong>Venda:</strong> ${vendaId}</p>
+                                            <p class="text-sm"><strong>Vencimento:</strong> ${venda.vencimento}</p>
+                                            <p class="text-sm"><strong>Valor:</strong> R$ ${parseFloat(venda.valor).toFixed(2)}</p>
+                                            <p class="text-sm"><strong>Restante:</strong> R$ ${parseFloat(venda.valor_restante).toFixed(2)}</p>
+                                            ${venda.itens && venda.itens.length > 0 ? `
+                                                <details class="mt-2">
+                                                    <summary class="text-xs cursor-pointer text-blue-400">Ver itens (${venda.itens.length})</summary>
+                                                    <div class="mt-1 pl-4">
+                                                        ${venda.itens.map(item => `
+                                                            <p class="text-xs text-gray-400">${item.produto} - R$ ${parseFloat(item.valor_total).toFixed(2)}</p>
+                                                        `).join('')}
+                                                    </div>
+                                                </details>
+                                            ` : ''}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        // Funções auxiliares
+        function toggleLoading(type, show) {
+            const btn = document.getElementById(`${type}Btn`);
+            const loading = document.getElementById(`${type}Loading`);
+            
+            if (show) {
+                btn.classList.add('hidden');
+                loading.classList.remove('hidden');
+            } else {
+                btn.classList.remove('hidden');
+                loading.classList.add('hidden');
+            }
+        }
+
+        function displayError(containerId, message) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `<div class="error p-4 bg-red-900/20 border border-red-500 rounded-lg">${message}</div>`;
+        }
+
+        function displaySuccess(containerId, message) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `<div class="success p-4 bg-green-900/20 border border-green-500 rounded-lg">${message}</div>`;
+        }
+
+        // Event listeners para Enter key
+        document.getElementById('searchProduct').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') searchProducts();
+        });
+
+        document.getElementById('searchProductInfo').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') searchProductInfo();
+        });
+
+        document.getElementById('convenioPassword').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') searchConvenio();
+        });
+    </script>
+</body>
+</html>

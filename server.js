@@ -1,14 +1,22 @@
 import express from 'express';
 import Firebird from 'node-firebird';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const PASSW =  "Jk$8@zL!v9qY7#pW"
 const app = express();
+let resultado
 
-// Adiciona o middleware para interpretar o corpo da requisição como JSON
 app.use(express.json());
 
-// --- CONFIGURAÇÕES DO BANCO DE DADOS FIREBIRD ---
-// ATENÇÃO: Preencha com as suas informações de conexão.
-// É uma boa prática usar variáveis de ambiente para dados sensíveis.
+/*
+* CREDENCIAIS DO BANCO DE DADOS FIREBIRD
+*/
+
 const firebirdOptions = {
   host: "localhost",
   port: 3050,
@@ -64,33 +72,56 @@ function FQuery(sql, params = []) {
     });
 }
 
-function startServer() {
-  const PORT = 3000; // Você pode tornar isso configurável
+/*
+* INICIAR O SERVIDOR UTILIZANDO A FUNÇÃO STARTSERVER
+*/
 
-  // Endpoint original
+function startServer(PORT, mainWindow) {
+
   app.get("/", (req, res) => {
-    res.send("Nada");
+    res.sendFile(path.join(__dirname, "endpoint.html"));
   });
 
-  // Endpoint original
-  app.get("/status", (req, res) => {
-    res.json({
-      status: "online",
-      uptime: process.uptime(),
-    });
+  app.get("/icon.ico", (req, res) => {
+    res.sendFile(path.join(__dirname, "icon.ico"));
   });
+  
+  /*
+  BUSCA DETALHADA POR PRODUTOS POR CODIGO OU NOME
+  */
 
-  //////////////////////////////////////////////////////////////////
-
-  //BUSCAR POR PRODUTOS
-
-  app.get("/produto/:searchTerm", async (req, res) => {
-    // Pega o parâmetro da URL
+  app.get("/produto/info/:searchTerm", async (req, res) => {
     const searchTerm = req.params.searchTerm;
 
-      if (!searchTerm) return res.send("Termo de Busca Inválido");
+    if (!searchTerm) return res.send("Termo de Busca Inválido");
 
-    // A query SQL fica segura e pré-definida aqui no servidor
+    const query = `
+          SELECT 
+            *
+          FROM PRODUTOS 
+          WHERE (UPPER(PRODUTO) CONTAINING UPPER(?) OR UPPER(CODIGO) CONTAINING UPPER(?))
+          ORDER BY PRODUTO
+        `;
+    const params = [searchTerm.toUpperCase(), searchTerm.toUpperCase()];
+
+    resultado = await FQuery(query, params);
+
+    if (resultado.length === 0) return res.status(404);
+
+    res.json(resultado);
+  });
+
+  //--------------------------------------------------------------------
+
+  /*
+  BUSCA SIMPLES POR PRODUTOS COM ESTOQUE MAIOR QUE 0
+  */
+
+  app.get("/produto/:searchTerm", async (req, res) => {
+    const searchTerm = req.params.searchTerm;
+
+    if (!searchTerm) return res.send("Termo de Busca Inválido");
+
     const query = `
           SELECT 
             CODIGO,
@@ -105,26 +136,36 @@ function startServer() {
           ORDER BY PRODUTO
         `;
     const params = [searchTerm.toUpperCase(), searchTerm.toUpperCase()];
-    let resultado = await FQuery(query, params);
+    resultado = await FQuery(query, params);
 
     if (resultado.length === 0)
       return res
         .status(404)
         .json({ message: "Nenhum produto encontrado com o termo informado." });
 
+        let codigoProduto = 2, nomeProduto = 2, quantidade = 'OK'
+    openRequestModal(mainWindow, codigoProduto, nomeProduto, quantidade);
     res.json(resultado);
   });
 
-  ///////////////////////////////////////////////////////////////////////////////
-  ///////////////////////////////////////////////////////////////////////////////
+  //----------------------------------------------------------------------
 
-  //BUSCAR POR CONVENIO
+  /*
+  BUSCA POR SALDO E DIVIDA DE CLIENTES QUE TEM DEBITOS PENDENTES
+  NO BANCO DE DADOS DA LOJA.
+  */
 
-  app.get("/convenio/:searchTerm", async (req, res) => {
-    // Pega o parâmetro da URL
+  app.get("/convenio/:searchTerm/:password", async (req, res) => {
     const searchTerm = req.params.searchTerm;
+    const password = req.params.password;
 
-    // A query SQL fica segura e pré-definida aqui no servidor
+    if (password !== PASSW)
+      return res.status(401).json({
+        error: "Senha Inválida",
+        succes: false,
+        message: "Senha Inválida",
+      });
+
     const query = `SELECT
   c.NOME,
   c.CIC AS DOCUMENTO,
@@ -134,18 +175,18 @@ function startServer() {
   c.LIMITEDECOMPRA AS LIMITE,
   CAST(
     '{' || LIST(
-      '"' || pc.CODIGOVENDA || '": {' ||
-        '"vencimento": "' || pc.VENCIMENTO || '", ' ||
-        '"descricao": "' || pc.DESCRICAO || '", ' ||
-        '"valor": ' || pc.VALOR || ', ' ||
-        '"multa": ' || pc.MULTA || ', ' ||
-        '"valor_pago": ' || pc.VALORPAGO || ', ' ||
-        '"valor_restante": ' || pc.VALORRESTANTE || ', ' ||
-        '"itens": ' || COALESCE((
+      '"' || pc.CODIGOVENDA || '": {
+        "vencimento": "' || pc.VENCIMENTO || '", 
+        "descricao": "' || pc.DESCRICAO || '", 
+        "valor": ' || pc.VALOR || ', 
+        "multa": ' || pc.MULTA || ', 
+        "valor_pago": ' || pc.VALORPAGO || ', 
+        "valor_restante": ' || pc.VALORRESTANTE || ', 
+        "itens": ' || COALESCE((
             SELECT '[' || LIST(
               CASE WHEN vcf2.CANCELAMENTO IS NULL THEN
                 '{"produto": "' || vcf2.PRODUTO || '", "valor_total": ' || vcf2.PRECOTOTAL || ', "codigo": "' || vcf2.CODIGOPRODUTO || '"}'
-              END, ', '
+              END, ', ')
             ) || ']'
             FROM VENDAS_CONVERTIDA_FP vcf2
             WHERE vcf2.VENDA = pc.CODIGOVENDA
@@ -169,7 +210,7 @@ LEFT JOIN (
     GROUP BY pc2.CODIGOCLIENTE
 ) sc ON pc.CODIGOCLIENTE = sc.CODIGOCLIENTE
 LEFT JOIN CONVENIOS conv ON c.CONVENIOS = conv.CODIGO
-WHERE UPPER(c.NOME) CONTAINING UPPER(?)
+WHERE UPPER(c.NOME) CONTAINING UPPER(?) 
   AND pc.VALORRESTANTE <> 0.00
 GROUP BY
   pc.CODIGOCLIENTE,
@@ -184,7 +225,7 @@ GROUP BY
   sc.SOMAMULTA
 ORDER BY c.NOME;`;
     const params = [searchTerm];
-    let resultado = await FQuery(query, params);
+    resultado = await FQuery(query, params);
 
     if (resultado.length === 0)
       return res
@@ -194,73 +235,199 @@ ORDER BY c.NOME;`;
     res.json(resultado);
   });
 
-  ///////////////////////////////////////////////////////////////////////////////
-  ///////////////////////////////////////////////////////////////////////////////
+  // -------------------------------------------------------------------------
 
-  //
+  /*
 
-  app.get("/update/produto/:codigo/:quantidade/:senha", async (req, res) => {
-    // Pega o parâmetro da URL
-    const codigo = req.params.codigo;
-    const quantidade = req.params.quantidade;
-    const senha = req.params.senha;
+  ENDPOINT PARA ATUALIZAÇÃO DE QUANTIDADE DE UM PRODUTO EM ESTOQUE.
 
-    if (senha !== "2444666668888888") return res.send("Senha Inválida");
+  IMPORTANTE: ESTE ENDPOINT NÃO REALIZA O CADASTRO DO PRODUTO, CASO
+  O PRODUTO NÃO TENHA CADASTRO, ELE DEVE SER REALIZADO NO ENDPOINT
+  DE CADASTRO DE PRODUTOS COM AS ESPECIFICAÇÕES COMPLETAS DO PRODUTO.
 
-    const query = `EXECUTE PROCEDURE PROC_ALTERAESTOQUE (?, ?, ?, ?, NULL)`;
-    const params = [codigo, quantidade, 1, "CesariaApp"];
-    let resultado = await FQuery(query, params);
-    res.json(resultado);
+  */
+
+  app.post("/update/produto", async (req, res) => {
+    try {
+      /*
+      PEGA O CORPO DA REQUISIÇÃO
+      */
+
+      const ProductData = req.body;
+      const codigoProduto = ProductData.BARCODE;
+      const quantity = ProductData.QUANTITY;
+      const senha = ProductData.PASSWORD;
+      const userCode = ProductData.USERCODE;
+
+      /*
+      VALIDAR CORPO DA REQUISIÇÃO
+      */
+
+      if (!userCode) return res.status(400);
+      if (!senha) return res.status(400);
+      if (!codigoProduto) return res.status(400);
+      if (!quantity) return res.status(400);
+
+      /*
+      VERIFICAR CREDENCIAIS DO UTILIZADOR
+      */
+
+      if (senha !== PASSW) return res.status(401);
+
+      /*
+      VERIFICAR SE O PRODUTO JÁ EXISTE NO ESTOQUE DA LOJA
+      */
+
+      const sql = "SELECT ESTOQUEATUAL FROM PRODUTOS WHERE CODIGO = ?";
+      const Result = await FQuery(sql, [codigoProduto]);
+
+      if (Result[0].ESTOQUEATUAL === quantity) return res.status(409);
+
+      /*
+      VERIFICAR SE A QUANTIDADE INFORMADA JÁ ESTÁ NO ESTOQUE ANTES DE INSERIR AS MODIFICAÇÕES NO SISTEMA DA LOJA.
+      */
+
+      if (Result.length === 0) return res.status(404);
+
+      /*
+      REALIZAR A ATUALIZAÇÃO DO ESTOQUE
+      */
+
+      const query = `EXECUTE PROCEDURE PROC_ALTERAESTOQUE (?, ?, ?, ?, NULL)`;
+      const params = [codigoProduto, quantity, 1, `CesariaApp`];
+      resultado = await FQuery(query, params);
+      res.status(200);
+    } catch (error) {
+      // O catch agora serve como uma segurança extra para outros tipos de erro
+      res.status(error.status || 500);
+    }
   });
 
-  ///////////////////////////////////////////////////////////////////////////////
-  ///////////////////////////////////////////////////////////////////////////////
+  //------------------------------------------------------------------------
 
-  //VERIFICAR CADASTRO DE PRODUTO
+  /*
+  * ENDPOINT PARA CADASTRO DE PRODUTOS CASO NÃO HAJA
+  */
 
-  app.get("/verify/produto/:codigo", async (req, res) => {
-    // Pega o parâmetro da URL
-    const codigo = req.params.codigo;
+  app.post("/produto/cadastro", async (req, res) => {
+    try {
+      /*
+      PEGA O CORPO DA REQUISIÇÃO
+      */
 
-    if (!codigo) return res.send("Código Inválido");
+      const produtoData = req.body;
+      const codigoProduto = produtoData.CODIGO;
+      const senha = produtoData.PASSWORD;
+      const userCode = produtoData.USERCODE;
 
-    const query = `
-          SELECT 
-            PRODUTO
-          FROM PRODUTOS 
-          WHERE UPPER(CODIGO) = UPPER(?)
-        `;
-    const params = [codigo];
-    let resultado = await FQuery(query, params);
+      /*
+      VALIDAR CORPO DA REQUISIÇÃO
+      */
 
-    if (resultado.length === 0)
-      return res
-        .status(404)
-        .json({ message: "Nenhum produto encontrado com o código informado." });
+      if (!userCode) return res.status(400);
+      if (!senha) return res.status(400);
+      if (!codigoProduto) {
+        return res.status(400).json({
+          error: 'O campo "CODIGO" é obrigatório no corpo da requisição.',
+        });
+      }
 
-    res.json(resultado);
+      /*
+      VERIFICAR CREDENCIAIS DO UTILIZADOR
+      */
+
+      if (senha !== PASSW) return res.status(401);
+
+      /*
+      VERIFICAR SE O PRODUTO JÁ TEM CADASTRO
+      */
+
+      const queryVerificacao = "SELECT 1 FROM PRODUTOS WHERE CODIGO = ?";
+      const resultadoVerificacao = await FQuery(queryVerificacao, [
+        codigoProduto,
+      ]);
+
+      if (resultadoVerificacao.length > 0) {
+        return res.status(409).json({
+          error: `O produto com o código ${codigoProduto} já existe.`, 
+        });
+      }
+
+      /*
+      SE NÃO EXISTIR, PROSSEGUIR COM O CADASTRO
+      */
+
+      produtoData.ESTOQUEATUAL = 0;
+
+      const colunas = Object.keys(produtoData);
+      const valores = Object.values(produtoData);
+
+      const placeholders = colunas.map(() => "?").join(", ");
+
+      const queryCadastro = `INSERT INTO PRODUTOS (${colunas.join(
+        ", "
+      )}) VALUES (${placeholders})`;
+
+      await FQuery(queryCadastro, valores);
+
+      res.status(201).json({
+        success: true,
+        message: `Produto ${codigoProduto} cadastrado com sucesso.`, 
+      });
+    } catch (error) {
+      res
+        .status(error.status || 500)
+        .json({ error: error.message || "Erro interno do servidor." });
+    }
   });
 
-  ///////////////////////////////////////////////////////////////////////////////
-  ///////////////////////////////////////////////////////////////////////////////
+  //------------------------------------------------------------------------
 
-  //CADASTRAR PRODUTO SE NÂO HOUVER CADASTRO
 
-  //   app.post("/cadastro/produto", async (req, res) => {
+  /*
+  CRIA UMA SOLICITAÇÃO DE TRANSFERENCIA DE PRODUTO
+  */
 
-  //     // A query SQL fica segura e pré-definida aqui no servidor
-  //     const query = ``;
-  //     const params = [];
-  //     resultado = await FQuery(query, params);
-  //     res.json(resultado);
-  //     });
+  app.post("/api/solicitar-produto", (req, res) => {
+    const { Senha, codigo, nomeProduto, quantidade, storeId } = req.body;
 
-  ///////////////////////////////////////////////////////////////////////////////
-  ///////////////////////////////////////////////////////////////////////////////
+    if (!Senha || !codigo || !nomeProduto || !quantidade || !storeId) {
+      return res.status(400).json({ message: "Todos os campos são obrigatórios." });
+    }
+
+    if (Senha !== PASSW) {
+      return res.status(401).json({ message: "Senha inválida." });
+    }
+
+    console.log("Solicitação de produto recebida:\n", { codigo, nomeProduto, quantidade, storeId });
+
+    // Call the function to open the modal in the renderer process
+    openRequestModal(mainWindow, codigo, nomeProduto, quantidade);
+
+    res.status(200).json({ success: true, message: "Solicitação de produto recebida com sucesso." });
+  });
+
+  /*
+  INICIA A ESCUTA DO SERVIDOR NA PORTA DEFINIDA
+  */
 
   app.listen(PORT, () => {
     console.log("Servidor Rodando");
+    // Example: Send a message to the renderer process when the server starts
+    if (mainWindow) {
+      mainWindow.webContents.send('server-started', `Servidor Express rodando na porta ${PORT}`);
+    }
   });
+
+  // Function to open the RequestsModal in the renderer process
+  function openRequestModal(mainWindow, codigoProduto, nomeProduto, quantidade) {
+    if (mainWindow) {
+      console.log("Abrindo Modal de Requisições", { codigoProduto, nomeProduto, quantidade })
+      mainWindow.webContents.send("open-request-modal", { codigoProduto, nomeProduto, quantidade });
+    } else {
+      console.error("mainWindow não está definido.");
+    }
+  }
 }
 
 export default startServer

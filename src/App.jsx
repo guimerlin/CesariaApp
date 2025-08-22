@@ -10,6 +10,7 @@ import Management from './pages/Management';
 import TaskBar from './components/common/TaskBar';
 import { HashRouter as Router, Route, Routes } from 'react-router-dom';
 import UpdateModal from './components/common/UpdateModal';
+import RequestsModal from './components/common/RequestsModal'; // Import RequestsModal
 
 const AppContent = () => {
   const {
@@ -40,6 +41,10 @@ const AppContent = () => {
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [updateStatus, setUpdateStatus] = useState('downloading'); // 'downloading' or 'downloaded'
 
+  // State for RequestsModal
+  const [isRequestsModalOpen, setIsRequestsModalOpen] = useState(false);
+  const [requestsModalData, setRequestsModalData] = useState(null);
+
   useEffect(() => {
     // Envia o evento para o processo principal assim que o app estiver pronto
     window.electron.ipcRenderer.send('app-ready');
@@ -59,15 +64,23 @@ const AppContent = () => {
       setShowUpdateModal(true);
     };
 
+    const handleOpenRequestModal = (event, data) => {
+      console.log('[DEBUG] Evento IPC recebido:', event); // NOVO LOG
+      setRequestsModalData(event);
+      console.log('[DEBUG] Abrindo modal de solicitação:', data);
+      setIsRequestsModalOpen(true);
+    };
+
     window.electron.ipcRenderer.on('update-available', handleUpdateAvailable);
     window.electron.ipcRenderer.on('update-downloaded', handleUpdateDownloaded);
     window.electron.ipcRenderer.on('update-pending', handleUpdatePending);
-
+    window.electron.ipcRenderer.on('open-request-modal', handleOpenRequestModal); // New listener
 
     return () => {
       window.electron.ipcRenderer.removeListener('update-available', handleUpdateAvailable);
       window.electron.ipcRenderer.removeListener('update-downloaded', handleUpdateDownloaded);
       window.electron.ipcRenderer.removeListener('update-pending', handleUpdatePending);
+      window.electron.ipcRenderer.removeListener('open-request-modal', handleOpenRequestModal); // Cleanup new listener
     };
   }, []);
 
@@ -77,6 +90,11 @@ const AppContent = () => {
 
   const handleLater = () => {
     setShowUpdateModal(false);
+  };
+
+  const handleCloseRequestsModal = () => {
+    setIsRequestsModalOpen(false);
+    setRequestsModalData(null);
   };
 
   // Inicializa o contexto de áudio na primeira interação do usuário
@@ -236,6 +254,11 @@ const AppContent = () => {
         status={updateStatus}
         onRestart={handleRestart}
         onLater={handleLater}
+      />
+      <RequestsModal
+        isOpen={isRequestsModalOpen}
+        onClose={handleCloseRequestsModal}
+        requestData={requestsModalData}
       />
     </div>
   );

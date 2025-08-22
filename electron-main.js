@@ -111,10 +111,10 @@ loadConfig();
 
 function STARTAPI() {
   if (!configFile.useAPI) return;
-  APIStart();
+  APIStart(3000, mainWindow);
 }
 
-STARTAPI();
+
 
 /////////////////////////////////////
 
@@ -403,6 +403,7 @@ app.whenReady().then(() => {
       app.getPath('userData'),
       'update-pending.flag',
     );
+    STARTAPI();
     if (fs.existsSync(updatePendingFlagPath)) {
       mainWindow.webContents.send('update-pending');
     }
