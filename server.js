@@ -21,31 +21,47 @@ const firebirdOptions = {
 };
 // -------------------------------------------------
 
+/**
+ * Executa uma query no banco de dados Firebird de forma assíncrona.
+ * Esta versão remove a coluna 'VENDAS' do resultado se ela for um objeto (stream/BLOB).
+ * @param {string} sql A query SQL a ser executada.
+ * @param {Array} [params=[]] Os parâmetros para a query.
+ * @returns {Promise<Array<Object>>} Uma promessa que resolve com o resultado da query processado.
+ */
 function FQuery(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    Firebird.attach(firebirdOptions, (err, db) => {
-      if (err) {
-        console.error("Erro de conexão com o Firebird:", err);
-        // Rejeita a promessa com um objeto de erro padronizado
-        return reject({
-          status: 500,
-          message: "Falha ao conectar no banco de dados.",
+    return new Promise((resolve, reject) => {
+        Firebird.attach(firebirdOptions, (err, db) => {
+            if (err) {
+                console.error("Erro de conexão com o Firebird:", err);
+                return reject({
+                    status: 500,
+                    message: "Falha ao conectar no banco de dados.",
+                });
+            }
+
+            db.query(sql, params, (err, result) => {
+                if (err) {
+                    console.error(`Erro ao executar a query: ${sql}`, err);
+                    db.detach();
+                    return reject({ status: 500, message: "Falha ao executar a query." });
+                }
+                
+                // Processa o resultado para remover a coluna VENDAS se for um objeto (stream)
+                const processedResult = result.map(row => {
+                    // A verificação `row.VENDAS && typeof row.VENDAS.pipe === 'function'` é a mais segura
+                    // para identificar um stream da biblioteca node-firebird.
+                    if (row.VENDAS && typeof row.VENDAS.pipe === 'function') {
+                        const { VENDAS, ...rest } = row; // Usa desestruturação para remover a propriedade VENDAS
+                        return rest; // Retorna o objeto sem a propriedade VENDAS
+                    }
+                    return row; // Retorna a linha original se VENDAS não for um stream
+                });
+
+                db.detach(); // A conexão pode ser fechada imediatamente
+                resolve(processedResult);
+            });
         });
-      }
-
-      db.query(sql, params, (err, result) => {
-        // Garante que a conexão seja sempre fechada
-        db.detach();
-
-        if (err) {
-          console.error(`Erro ao executar a query: ${sql}`, err);
-          return reject({ status: 500, message: "Falha ao executar a query." });
-        }
-        // Resolve a promessa com o resultado bem-sucedido
-        resolve(result);
-      });
     });
-  });
 }
 
 function startServer() {

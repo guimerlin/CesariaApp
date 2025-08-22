@@ -10,9 +10,29 @@ const ClientDetailsModal = ({
 }) => {
   const [showPurchaseTable, setShowPurchaseTable] = useState(false);
 
-  // Proteção: sempre garantir que clientDetails é um objeto
-  const safeClientDetails = clientDetails || {};
-  console.log('ClientDetailsModal - clientDetails:', safeClientDetails);
+  // Get the name and document of the main client for comparison
+  const mainClientName = clientData?.NOME;
+  const mainClientDoc = clientData?.DOCUMENTO || clientData?.CIC;
+
+  // Filter clientDetails to only include clients with the same name or document
+  const filteredClientDetails = clientDetails
+    ? Object.entries(clientDetails).reduce((acc, [storeId, details]) => {
+        const filtered = details.filter((detail) => {
+          const detailDoc = detail.DOCUMENTO || detail.CIC;
+          // Only include if name or document matches
+          return detail.NOME === mainClientName || (mainClientDoc && detailDoc === mainClientDoc);
+        });
+
+        if (filtered.length > 0) {
+          acc[storeId] = filtered;
+        }
+        return acc;
+      }, {})
+    : {};
+
+  // Use the filtered data; ensure it's an object
+  const safeClientDetails = filteredClientDetails || {};
+  console.log('ClientDetailsModal - filtered clientDetails:', safeClientDetails);
 
   if (!isVisible) return null;
 
@@ -360,7 +380,7 @@ const ClientDetailsModal = ({
               ) : (
                 <div className="py-4 text-center">
                   <p className="text-gray-500">
-                    Nenhum detalhe adicional encontrado para este cliente.
+                    Nenhum detalhe adicional encontrado para este cliente em outras lojas com o mesmo nome ou documento.
                   </p>
                 </div>
               )}
