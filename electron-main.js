@@ -438,9 +438,9 @@ ipcMain.handle('get-config', () => {
   return configFile;
 });
 
-ipcMain.handle('fetch-url', async (event, url) => {
+ipcMain.handle('fetch-url', async (event, url, options) => {
   return new Promise((resolve, reject) => {
-    const request = net.request(url);
+    const request = net.request({ ...options, url });
     let body = '';
 
     request.on('response', (response) => {
@@ -450,11 +450,12 @@ ipcMain.handle('fetch-url', async (event, url) => {
 
       response.on('end', () => {
         try {
+          // Tenta fazer o parse do JSON, mas se não for um JSON válido, retorna o corpo como texto
           const json = JSON.parse(body);
           resolve({ success: true, data: json });
         } catch (error) {
-          console.error('[ELECTRON] Erro ao fazer parse do JSON:', error);
-          reject({ success: false, error: 'Invalid JSON response' });
+          // Se o corpo não for um JSON válido, resolve com o corpo de texto simples
+          resolve({ success: true, data: body });
         }
       });
 
@@ -468,6 +469,11 @@ ipcMain.handle('fetch-url', async (event, url) => {
       console.error('[ELECTRON] Erro na requisição:', error);
       reject({ success: false, error: error.message });
     });
+
+    // Escreve o corpo da requisição se ele existir
+    if (options && options.body) {
+      request.write(options.body);
+    }
 
     request.end();
   });

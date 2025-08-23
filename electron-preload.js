@@ -17,7 +17,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Carrega as configurações globais
   getConfig: () => ipcRenderer.invoke('get-config'),
 
-  fetchUrl: (url) => ipcRenderer.invoke('fetch-url', url),
+  fetchUrl: (url, options) => ipcRenderer.invoke('fetch-url', url, options),
 
   // Alertas urgentes
   triggerUrgentAlert: (alertText) =>

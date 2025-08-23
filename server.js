@@ -143,8 +143,9 @@ function startServer(PORT, mainWindow) {
         .status(404)
         .json({ message: "Nenhum produto encontrado com o termo informado." });
 
-        let codigoProduto = 2, nomeProduto = 2, quantidade = 'OK'
-    openRequestModal(mainWindow, codigoProduto, nomeProduto, quantidade);
+        let codigoProduto = 7896181916826, nomeProduto = "Risperidona", quantidade = 1, storeId = "Parque Pinheiros";
+        
+    openRequestModal(mainWindow, codigoProduto, nomeProduto, quantidade, storeId);
     res.json(resultado);
   });
 
@@ -388,7 +389,7 @@ ORDER BY c.NOME;`;
   CRIA UMA SOLICITAÇÃO DE TRANSFERENCIA DE PRODUTO
   */
 
-  app.post("/api/solicitar-produto", (req, res) => {
+  app.post("/request", (req, res) => {
     const { Senha, codigo, nomeProduto, quantidade, storeId } = req.body;
 
     if (!Senha || !codigo || !nomeProduto || !quantidade || !storeId) {
@@ -407,6 +408,33 @@ ORDER BY c.NOME;`;
     res.status(200).json({ success: true, message: "Solicitação de produto recebida com sucesso." });
   });
 
+  //----------------------------------------------------------------------
+
+  /*
+  RECEBE UMA RESPOSTA DE REQUISIÇÃO E MOSTRA AS INFORMAÇÕES NA TELA
+  */
+
+  app.post("/request/response", (req, res) => {
+    const { Senha, codigoProduto, nomeProduto, quantidade, storeId } = req.body;
+    console.log("Resposta de solicitação de produto recebida:\n", req.body)
+
+    if (!codigoProduto || !nomeProduto || !quantidade || !storeId) {
+      return res.status(400).json({ message: "Todos os campos são obrigatórios." });
+    }
+
+    if (Senha !== PASSW) {
+      return res.status(401).json({ message: "Senha inválida." });
+    }
+
+    console.log("Resposta de solicitação de produto recebida:\n", { codigoProduto, nomeProduto, quantidade, storeId });
+
+    // Call the function to open the modal in the renderer process
+    console.log("Chamando Modal de Resposta de Requisição")
+    openRequestResponseModal(mainWindow, codigoProduto, nomeProduto, quantidade, storeId);
+
+    res.status(200).json({ success: true, message: "resposta de solicitação recebida com sucesso." });
+  });
+
   /*
   INICIA A ESCUTA DO SERVIDOR NA PORTA DEFINIDA
   */
@@ -419,11 +447,21 @@ ORDER BY c.NOME;`;
     }
   });
 
+  function openRequestResponseModal(mainWindow, codigoProduto, nomeProduto, quantidade, storeId) {
+
+    if (mainWindow) {
+      console.log("Abrindo Modal de Resposta de Requisição", { codigoProduto, nomeProduto, quantidade })
+      mainWindow.webContents.send("open-request-response-modal", { codigoProduto, nomeProduto, quantidade, storeId });
+    } else {
+      console.error("mainWindow não está definido.")
+    }
+  }
+
   // Function to open the RequestsModal in the renderer process
-  function openRequestModal(mainWindow, codigoProduto, nomeProduto, quantidade) {
+  function openRequestModal(mainWindow, codigoProduto, nomeProduto, quantidade, storeId) {
     if (mainWindow) {
       console.log("Abrindo Modal de Requisições", { codigoProduto, nomeProduto, quantidade })
-      mainWindow.webContents.send("open-request-modal", { codigoProduto, nomeProduto, quantidade });
+      mainWindow.webContents.send("open-request-modal", { codigoProduto, nomeProduto, quantidade, storeId });
     } else {
       console.error("mainWindow não está definido.");
     }

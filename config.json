@@ -10,6 +10,7 @@
   "openWithSystem": true,
   "showDevMenu": false,
   "useAPI": true,
+  "APIPassword": "Jk$8@zL!v9qY7#pW",
   "endpoints": {
     "Parque Pinheiros": "pinheiros.cesaria.shop",
     "Vista Alegre": "vista.cesaria.shop",
