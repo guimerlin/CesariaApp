@@ -17,7 +17,7 @@ const SearchContent = () => {
     statusMessage,
     search,
     clearSearch,
-    sendChatMessage,
+    sendProductRequest,
   } = useSearchContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -40,7 +40,7 @@ const SearchContent = () => {
   }, []);
 
   const handleQuantityConfirm = useCallback(async (product, quantity) => {
-    sendChatMessage(product.storeId, product, quantity, dbService, currentUser);
+    sendProductRequest(product.storeId, product, quantity, dbService, currentUser);
     alert(
       `Solicitação de ${quantity} unidade(s) do produto "${product.PRODUTO}" enviada para ${product.storeId}.`,
     );

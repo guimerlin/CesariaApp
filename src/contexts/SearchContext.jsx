@@ -8,51 +8,59 @@ export const SearchContextProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
 
-  async function sendChatMessage(
+  async function sendProductRequest(
     targetStore,
     productInfo,
     quantidade,
-    dbService,
     currentUser,
   ) {
-    console.log('[STOCK SERVICE] Enviando mensagem no chat:', {
+    console.log('[PRODUCT REQUEST] Enviando solicitação de produto:', {
       targetStore,
       productInfo,
       quantidade,
-      dbService: !!dbService,
+      currentUser,
     });
 
-    if (!dbService) {
-      console.error('[STOCK SERVICE] dbService não fornecido');
-      return;
+    const endpoints = config.endpoints || {};
+    const url = endpoints[targetStore];
+
+    if (!url) {
+      console.error(`[PRODUCT REQUEST] URL para a loja ${targetStore} não encontrada.`);
+      throw new Error(`Endpoint para a loja ${targetStore} não configurado.`);
     }
 
-    const lojas = [currentUser, targetStore].sort();
-    const chatId = `${lojas[0]}_${lojas[1]}`;
+    const requestBody = {
+      code: productInfo.CODIGO,
+      name: productInfo.PRODUTO,
+      amount: quantidade,
+      storeId: currentUser,
+      password: config.APIPassword,
+    };
 
-    const message = {
-      sender: currentUser,
-      senderName: currentUser,
-      timestamp: Date.now(),
-      text: `Solicitação URGENTE de ${quantidade} unidade(s) do produto "${productInfo.PRODUTO}" (Código: ${productInfo.CODIGO}).`,
-      urgent: true,
-      product: productInfo,
-      quantidade: quantidade,
+    const fetchUrl = `http://${url}/request`;
+    const options = {
+      method: 'POST',
+      body: JSON.stringify(requestBody),
+      headers: {
+        'Content-Type': 'application/json',
+      },
     };
 
     try {
-      console.log('[STOCK SERVICE] Enviando mensagem para chatId:', chatId);
-      await dbService.sendMessage(chatId, message);
-      console.log('[STOCK SERVICE] Mensagem enviada com sucesso');
+      console.log(`[PRODUCT REQUEST] Enviando requisição para: ${fetchUrl}`);
+      const result = await window.electronAPI.fetchUrl(fetchUrl, options);
+      console.log('[PRODUCT REQUEST] Resultado da requisição:', result);
 
-      console.log('[STOCK SERVICE] Criando notificação urgente');
-      await dbService.createUrgentNotification(chatId, currentUser, [
-        targetStore,
-      ]);
-      console.log('[STOCK SERVICE] Notificação urgente criada com sucesso');
+      if (!result.success) {
+        throw new Error(
+          `Erro na solicitação para ${targetStore}: ${result.error || result.message}`,
+        );
+      }
+
+      return result;
     } catch (error) {
       console.error(
-        '[STOCK SERVICE] Erro ao enviar mensagem/notificação:',
+        `[PRODUCT REQUEST] Falha ao enviar solicitação para ${targetStore}:`,
         error,
       );
       throw error;
@@ -142,7 +150,7 @@ export const SearchContextProvider = ({ children }) => {
     statusMessage,
     search,
     clearSearch,
-    sendChatMessage,
+    sendProductRequest,
   };
 
   return (
