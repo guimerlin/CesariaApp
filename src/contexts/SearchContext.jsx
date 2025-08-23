@@ -69,20 +69,48 @@ export const SearchContextProvider = ({ children }) => {
     const promises = [];
 
     for (const [storeName, url] of Object.entries(endpoints)) {
-      const fetchUrl = `https://${url}/${searchType}/${searchTerm}`;
-      console.log(`Buscando em: ${fetchUrl}`);
-      const promise = window.electronAPI
-        .fetchUrl(fetchUrl)
-        .then((result) => {
-          if (!result.success) {
-            throw new Error(`Erro na loja ${storeName}: ${result.error}`);
-          }
-          return { storeName, data: result.data };
-        })
-        .catch((error) => {
-          console.error(`Falha ao buscar dados da loja ${storeName}:`, error);
-          return { storeName, error: error.message };
-        });
+      let promise;
+      if (searchType === 'convenio') {
+        const fetchUrl = `http://${url}/cliente/convenio`;
+        console.log(`Buscando em: ${fetchUrl} (POST)`);
+        const options = {
+          method: 'POST',
+          body: JSON.stringify({
+            searchTerm: searchTerm,
+            password: config.APIPassword,
+          }),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        };
+        promise = window.electronAPI
+          .fetchUrl(fetchUrl, options)
+          .then((result) => {
+            if (!result.success) {
+              throw new Error(`Erro na loja ${storeName}: ${result.error}`);
+            }
+            return { storeName, data: result.data.data };
+          })
+          .catch((error) => {
+            console.error(`Falha ao buscar dados da loja ${storeName}:`, error);
+            return { storeName, error: error.message };
+          });
+      } else {
+        const fetchUrl = `http://${url}/${searchType}/${searchTerm}`;
+        console.log(`Buscando em: ${fetchUrl} (GET)`);
+        promise = window.electronAPI
+          .fetchUrl(fetchUrl)
+          .then((result) => {
+            if (!result.success) {
+              throw new Error(`Erro na loja ${storeName}: ${result.error}`);
+            }
+            return { storeName, data: result.data.data };
+          })
+          .catch((error) => {
+            console.error(`Falha ao buscar dados da loja ${storeName}:`, error);
+            return { storeName, error: error.message };
+          });
+      }
       promises.push(promise);
     }
 

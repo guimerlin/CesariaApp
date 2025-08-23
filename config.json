@@ -16,6 +16,7 @@
     "Vista Alegre": "vista.cesaria.shop",
     "Taboão": "taboao.cesaria.shop",
     "Jardim Salete": "salete.cesaria.shop",
-    "Jardim da Luz": "luz.cesaria.shop"
+    "Jardim da Luz": "luz.cesaria.shop",
+    "TI": "localhost:3000"
   }
 }

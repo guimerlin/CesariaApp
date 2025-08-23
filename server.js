@@ -2,6 +2,7 @@ import express from 'express';
 import Firebird from 'node-firebird';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { Buffer } from 'buffer';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,7 +17,7 @@ app.use(express.json());
  * CREDENCIAIS DO BANCO DE DADOS FIREBIRD
  */
 
-const firebirdOptions = {
+const pool = Firebird.pool(5, {
   host: 'localhost',
   port: 3050,
   database: 'C:\\MAGNO SYSTEM\\PHARMAGNO\\SISGEMP.FDB',
@@ -25,7 +26,7 @@ const firebirdOptions = {
   lowercase_keys: false, // Opcional
   role: null, // Opcional
   pageSize: 4096, // Opcional
-};
+});
 // -------------------------------------------------
 
 /*
@@ -34,31 +35,50 @@ const firebirdOptions = {
  * FUNCIONE CORRETAMENTE
  */
 
-function FQuery(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    Firebird.attach(firebirdOptions, (err, db) => {
-      if (err) {
-        console.error('Erro de conexão com o Firebird:', err);
-        // Rejeita a promessa com um objeto de erro padronizado
-        return reject({
-          status: 500,
-          message: 'Falha ao conectar no banco de dados.',
-        });
-      }
+/**
+ * Executa uma query no banco de dados Firebird utilizando um pool de conexões.
+ * Com a opção 'blobAsText', a função fica muito mais simples, pois não é mais
+ * necessário tratar streams manualmente.
+ *
+ * @param {string} sql - A instrução SQL a ser executada.
+ * @param {Array<any>} [params=[]] - Os parâmetros para a query.
+ * @returns {Promise<any>} - Retorna o resultado da query.
+ * @throws {Error} - Lança um erro detalhado se a conexão ou a query falharem.
+ */
+async function FQuery(sql, params = []) {
+  let connection;
 
-      db.query(sql, params, (err, result) => {
-        // Garante que a conexão seja sempre fechada
-        db.detach();
+  try {
+    // --- PASSO 2: Obter uma conexão do pool ---
+    connection = await new Promise((resolve, reject) => {
+      pool.get((err, db) => {
+        if (err) return reject(err);
+        resolve(db);
+      });
+    });
 
-        if (err) {
-          console.error(`Erro ao executar a query: ${sql}`, err);
-          return reject({ status: 500, message: 'Falha ao executar a query.' });
-        }
-        // Resolve a promessa com o resultado bem-sucedido
+    // --- PASSO 3: Executar a query ---
+    // A query agora retorna o resultado diretamente com as colunas de texto já convertidas.
+    const result = await new Promise((resolve, reject) => {
+      connection.query(sql, params, (err, result) => {
+        if (err) return reject(err);
         resolve(result);
       });
     });
-  });
+
+    return result;
+  } catch (error) {
+    // --- Tratamento de Erros Centralizado ---
+    console.error(
+      `[FQuery DATABASE ERROR] SQL: "${sql}" | Params: ${JSON.stringify(params)} | Error: ${error.message}`,
+    );
+    throw new Error('Falha ao executar a operação no banco de dados.');
+  } finally {
+    // --- PASSO 4: Liberar a conexão de volta para o pool ---
+    if (connection) {
+      connection.detach();
+    }
+  }
 }
 
 /*
@@ -79,24 +99,41 @@ function startServer(PORT, mainWindow) {
   */
 
   app.get('/produto/info/:searchTerm', async (req, res) => {
-    const searchTerm = req.params.searchTerm;
+    try {
+      const { searchTerm } = req.params;
 
-    if (!searchTerm) return res.send('Termo de Busca Inválido');
+      if (!searchTerm) {
+        return res.status(400).json({
+          success: false,
+          message: 'O termo de busca não foi fornecido.',
+        });
+      }
 
-    const query = `
-          SELECT 
-            *
-          FROM PRODUTOS 
-          WHERE (UPPER(PRODUTO) CONTAINING UPPER(?) OR UPPER(CODIGO) CONTAINING UPPER(?))
-          ORDER BY PRODUTO
-        `;
-    const params = [searchTerm.toUpperCase(), searchTerm.toUpperCase()];
+      const query = `
+        SELECT 
+          *
+        FROM PRODUTOS 
+        WHERE (UPPER(PRODUTO) CONTAINING ? OR UPPER(CODIGO) CONTAINING ?)
+        ORDER BY PRODUTO
+      `;
+      const params = [searchTerm.toUpperCase(), searchTerm.toUpperCase()];
 
-    resultado = await FQuery(query, params);
+      const resultado = await FQuery(query, params);
 
-    if (resultado.length === 0) return res.status(404).json({error: true});
+      if (!resultado || resultado.length === 0) {
+        return res
+          .status(404)
+          .json({ success: false, message: 'Nenhum produto encontrado.' });
+      }
 
-    res.json(resultado);
+      res.json({ success: true, data: resultado });
+    } catch (error) {
+      console.error('Erro ao buscar produto:', error);
+      res.status(error.status || 500).json({
+        success: false,
+        message: error.message || 'Erro interno do servidor.',
+      });
+    }
   });
 
   //--------------------------------------------------------------------
@@ -106,44 +143,47 @@ function startServer(PORT, mainWindow) {
   */
 
   app.get('/produto/:searchTerm', async (req, res) => {
-    const searchTerm = req.params.searchTerm;
+    try {
+      const { searchTerm } = req.params;
 
-    if (!searchTerm) return res.send('Termo de Busca Inválido');
+      if (!searchTerm) {
+        return res.status(400).json({
+          success: false,
+          message: 'O termo de busca não foi fornecido.',
+        });
+      }
 
-    const query = `
-          SELECT 
-            CODIGO,
-            PRODUTO,
-            APRESENTACAO,
-            ESTOQUEATUAL,
-            PRECOCUSTO,
-            PRECOVENDA
-          FROM PRODUTOS 
-          WHERE (UPPER(PRODUTO) CONTAINING UPPER(?) OR UPPER(CODIGO) CONTAINING UPPER(?))
-          AND ESTOQUEATUAL > 0
-          ORDER BY PRODUTO
-        `;
-    const params = [searchTerm.toUpperCase(), searchTerm.toUpperCase()];
-    resultado = await FQuery(query, params);
+      const query = `
+        SELECT 
+          CODIGO,
+          PRODUTO,
+          APRESENTACAO,
+          ESTOQUEATUAL,
+          PRECOCUSTO,
+          PRECOVENDA
+        FROM PRODUTOS 
+        WHERE (UPPER(PRODUTO) CONTAINING ? OR UPPER(CODIGO) CONTAINING ?)
+        AND ESTOQUEATUAL > 0
+        ORDER BY PRODUTO
+      `;
+      const params = [searchTerm.toUpperCase(), searchTerm.toUpperCase()];
+      const resultado = await FQuery(query, params);
 
-    if (resultado.length === 0)
-      return res
-        .status(404)
-        .json({ message: 'Nenhum produto encontrado com o termo informado.' });
+      if (!resultado || resultado.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'Nenhum produto encontrado com o termo informado.',
+        });
+      }
 
-    let codigoProduto = 7896181916826,
-      nomeProduto = 'Risperidona',
-      quantidade = 1,
-      storeId = 'Parque Pinheiros';
-
-    openRequestModal(
-      mainWindow,
-      codigoProduto,
-      nomeProduto,
-      quantidade,
-      storeId,
-    );
-    res.json(resultado);
+      res.json({ success: true, data: resultado });
+    } catch (error) {
+      console.error('Erro ao buscar produto com estoque:', error);
+      res.status(error.status || 500).json({
+        success: false,
+        message: error.message || 'Erro interno do servidor.',
+      });
+    }
   });
 
   //----------------------------------------------------------------------
@@ -153,18 +193,25 @@ function startServer(PORT, mainWindow) {
   NO BANCO DE DADOS DA LOJA.
   */
 
-  app.get('/convenio/:searchTerm/:password', async (req, res) => {
-    const searchTerm = req.params.searchTerm;
-    const password = req.params.password;
+  app.post('/cliente/convenio', async (req, res) => {
+    try {
+      const { searchTerm, password } = req.body;
 
-    if (password !== PASSW)
-      return res.status(401).json({
-        error: 'Senha Inválida',
-        succes: false,
-        message: 'Senha Inválida',
-      });
+      if (password !== PASSW) {
+        return res.status(401).json({
+          success: false,
+          message: 'Senha de acesso inválida.',
+        });
+      }
 
-    const query = `SELECT
+      if (!searchTerm) {
+        return res.status(400).json({
+          success: false,
+          message: 'O termo de busca não foi fornecido.',
+        });
+      }
+
+      const query = `SELECT
   c.NOME,
   c.CIC AS DOCUMENTO,
   c.MATRICULA,
@@ -173,18 +220,18 @@ function startServer(PORT, mainWindow) {
   c.LIMITEDECOMPRA AS LIMITE,
   CAST(
     '{' || LIST(
-      '"' || pc.CODIGOVENDA || '": {
-        "vencimento": "' || pc.VENCIMENTO || '", 
-        "descricao": "' || pc.DESCRICAO || '", 
-        "valor": ' || pc.VALOR || ', 
-        "multa": ' || pc.MULTA || ', 
-        "valor_pago": ' || pc.VALORPAGO || ', 
-        "valor_restante": ' || pc.VALORRESTANTE || ', 
-        "itens": ' || COALESCE((
+      '"' || pc.CODIGOVENDA || '": {' ||
+        '"vencimento": "' || pc.VENCIMENTO || '", ' ||
+        '"descricao": "' || pc.DESCRICAO || '", ' ||
+        '"valor": ' || pc.VALOR || ', ' ||
+        '"multa": ' || pc.MULTA || ', ' ||
+        '"valor_pago": ' || pc.VALORPAGO || ', ' ||
+        '"valor_restante": ' || pc.VALORRESTANTE || ', ' ||
+        '"itens": ' || COALESCE((
             SELECT '[' || LIST(
               CASE WHEN vcf2.CANCELAMENTO IS NULL THEN
                 '{"produto": "' || vcf2.PRODUTO || '", "valor_total": ' || vcf2.PRECOTOTAL || ', "codigo": "' || vcf2.CODIGOPRODUTO || '"}'
-              END, ', ')
+              END, ', '
             ) || ']'
             FROM VENDAS_CONVERTIDA_FP vcf2
             WHERE vcf2.VENDA = pc.CODIGOVENDA
@@ -208,7 +255,7 @@ LEFT JOIN (
     GROUP BY pc2.CODIGOCLIENTE
 ) sc ON pc.CODIGOCLIENTE = sc.CODIGOCLIENTE
 LEFT JOIN CONVENIOS conv ON c.CONVENIOS = conv.CODIGO
-WHERE UPPER(c.NOME) CONTAINING UPPER(?) 
+WHERE UPPER(c.NOME) CONTAINING UPPER(?)
   AND pc.VALORRESTANTE <> 0.00
 GROUP BY
   pc.CODIGOCLIENTE,
@@ -222,15 +269,24 @@ GROUP BY
   sc.SOMAVALOR,
   sc.SOMAMULTA
 ORDER BY c.NOME;`;
-    const params = [searchTerm];
-    resultado = await FQuery(query, params);
+      const params = [searchTerm.toUpperCase()];
+      const resultado = await FQuery(query, params);
 
-    if (resultado.length === 0)
-      return res
-        .status(404)
-        .json({ message: 'Nenhum convênio encontrado com o termo informado.' });
+      if (!resultado || resultado.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'Nenhum convênio encontrado com o termo informado.',
+        });
+      }
 
-    res.json(resultado);
+      res.json({ success: true, data: resultado });
+    } catch (error) {
+      console.error('Erro ao buscar convênio:', error);
+      res.status(error.status || 500).json({
+        success: false,
+        message: error.message || 'Erro interno do servidor.',
+      });
+    }
   });
 
   // -------------------------------------------------------------------------
@@ -261,16 +317,21 @@ ORDER BY c.NOME;`;
       VALIDAR CORPO DA REQUISIÇÃO
       */
 
-      if (!userCode) return res.status(400);
-      if (!senha) return res.status(400);
-      if (!codigoProduto) return res.status(400);
-      if (!quantity) return res.status(400);
+      if (!userCode || !senha || !codigoProduto || !quantity) {
+        return res.status(400).json({
+          success: false,
+          message: 'Todos os campos são obrigatórios no corpo da requisição',
+        });
+      }
 
       /*
       VERIFICAR CREDENCIAIS DO UTILIZADOR
       */
 
-      if (senha !== PASSW) return res.status(401);
+      if (senha !== PASSW)
+        return res
+          .status(401)
+          .json({ success: false, message: 'Senha inválida.' });
 
       /*
       VERIFICAR SE O PRODUTO JÁ EXISTE NO ESTOQUE DA LOJA
@@ -278,13 +339,20 @@ ORDER BY c.NOME;`;
 
       const sql = 'SELECT ESTOQUEATUAL FROM PRODUTOS WHERE CODIGO = ?';
       const Result = await FQuery(sql, [codigoProduto]);
-      if (Result.length === 0) return res.status(404);
+      if (Result.length === 0)
+        return res
+          .status(404)
+          .json({ success: false, message: 'Produto não encontrado.' });
 
       /*
       VERIFICAR SE A QUANTIDADE INFORMADA JÁ ESTÁ NO ESTOQUE ANTES DE INSERIR AS MODIFICAÇÕES NO SISTEMA DA LOJA.
       */
 
-      if (Result[0].ESTOQUEATUAL === quantity) return res.status(409);
+      if (Result[0].ESTOQUEATUAL === quantity)
+        return res.status(409).json({
+          success: false,
+          message: 'A quantidade informada já está no estoque.',
+        });
 
       /*
       REALIZAR A ATUALIZAÇÃO DO ESTOQUE
@@ -293,11 +361,16 @@ ORDER BY c.NOME;`;
       const query = `EXECUTE PROCEDURE PROC_ALTERAESTOQUE (?, ?, ?, ?, NULL)`;
       const params = [codigoProduto, quantity, 1, `CesariaApp`];
       resultado = await FQuery(query, params);
-      res.status(200).json(resultado);
+      res.status(200).json({
+        success: true,
+        message: 'Estoque atualizado com sucesso.',
+        data: resultado,
+      });
     } catch (error) {
       // O catch agora serve como uma segurança extra para outros tipos de erro
       res.status(error.status || 500).json({
-        error: error.message || 'Erro interno do servidor.',
+        success: false,
+        message: error.message || 'Erro interno do servidor.',
       });
     }
   });
@@ -323,11 +396,10 @@ ORDER BY c.NOME;`;
       VALIDAR CORPO DA REQUISIÇÃO
       */
 
-      if (!userCode) return res.status(400);
-      if (!senha) return res.status(400);
-      if (!Produto) {
-        return res.status(400).json({
-          error: 'O campo PRODUCT é obrigatório no corpo da requisição.',
+      if (!userCode || !senha || !Produto) {
+        res.json({
+          success: false,
+          message: 'Todos os campos são obrigatórios no corpo da requisição',
         });
       }
 
@@ -335,7 +407,10 @@ ORDER BY c.NOME;`;
       VERIFICAR CREDENCIAIS DO UTILIZADOR
       */
 
-      if (senha !== PASSW) return res.status(401);
+      if (senha !== PASSW)
+        return res
+          .status(401)
+          .json({ success: false, message: 'Senha inválida.' });
 
       /*
       VERIFICAR SE O PRODUTO JÁ TEM CADASTRO
@@ -348,7 +423,9 @@ ORDER BY c.NOME;`;
 
       if (resultadoVerificacao.length > 0) {
         return res.status(409).json({
-          error: `O produto com o código ${Produto.CODIGO} já existe.`,
+          success: false,
+          message: `O produto com o código ${Produto.CODIGO} já existe.`,
+          data: resultadoVerificacao,
         });
       }
 
@@ -367,16 +444,18 @@ ORDER BY c.NOME;`;
         ', ',
       )}) VALUES (${placeholders})`;
 
-      await FQuery(queryCadastro, valores);
+      const RespQuery = await FQuery(queryCadastro, valores);
 
       res.status(201).json({
         success: true,
         message: `Produto ${Produto.CODIGO} cadastrado com sucesso.`,
+        data: RespQuery,
       });
     } catch (error) {
-      res
-        .status(error.status || 500)
-        .json({ error: error.message || 'Erro interno do servidor.' });
+      res.status(error.status || 500).json({
+        success: false,
+        message: error.message || 'Erro interno do servidor.',
+      });
     }
   });
 
@@ -392,11 +471,13 @@ ORDER BY c.NOME;`;
     if (!code || !name || !amount || !storeId || !password) {
       return res
         .status(400)
-        .json({ message: 'Todos os campos são obrigatórios.' });
+        .json({ success: false, message: 'Todos os campos são obrigatórios.' });
     }
 
     if (password !== PASSW) {
-      return res.status(401).json({ message: 'Senha inválida.' });
+      return res
+        .status(401)
+        .json({ success: false, message: 'Senha inválida.' });
     }
 
     console.log('Solicitação de produto recebida:\n', {
@@ -434,11 +515,13 @@ ORDER BY c.NOME;`;
     ) {
       return res
         .status(400)
-        .json({ message: 'Todos os campos são obrigatórios.' });
+        .json({ success: false, message: 'Todos os campos são obrigatórios.' });
     }
 
     if (password !== PASSW) {
-      return res.status(401).json({ message: 'Senha inválida.' });
+      return res
+        .status(401)
+        .json({ success: false, message: 'Senha inválida.' });
     }
 
     console.log(
