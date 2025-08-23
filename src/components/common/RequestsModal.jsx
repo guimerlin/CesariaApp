@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Dialog,
   DialogContent,
@@ -11,22 +11,19 @@ import { Button } from '../ui/button';
 import config from '../../../config.json';
 
 const RequestsModal = ({ isOpen, onClose, requestData, currentUser }) => {
-  const [selfProductInfo, setSelfProductInfo] = useState(null);
-  const [remoteProductInfo, setRemoteProductInfo] = useState(null);
-
   if (!isOpen) return null;
 
   /*
   ACEITA A TRANSFERENCIA DE PRODUTO E ATUALIZA O ESTOQUE DE AMBAS AS LOJAS
   REALIZA O CADASTRO DO PRODUTO AUTOMATICAMENTE CASO ELE NÃO EXISTA NA LOJA
+  QUE REALIZOU A SOLICITAÇÃO.
   */
 
-  const onSend = () => {
+  const onSend = async () => {
     // const selfUrl = config.endpoints[currentUser];
     // const baseUrl = config.endpoints[requestData.storeId];
     const selfUrl = 'localhost:3000';
     const baseUrl = 'localhost:3000';
-    let selfProduct;
 
     /*
     CONFIRMAÇÕES DE INFORMAÇÕES IMPORTANTES PARA O FUNCIONAMENTO
@@ -49,11 +46,10 @@ const RequestsModal = ({ isOpen, onClose, requestData, currentUser }) => {
     }
 
     /*
-    VERIFICA SE O ITEM EXISTE NO ESTOQUE LOCAL E SE A QUANTIDADE SOLICITADA
-    É VÁLIDA OU MAIOR QUE O ESTOQUE DISPONÍVEL
+    VERIFICA SE O ITEM EXISTE NO ESTOQUE LOCAL
     */
 
-    const SelfItemCheck = `http://${selfUrl}/produto/info/${requestData.codigoProduto}`;
+    const SelfItemCheck = `http://${selfUrl}/produto/info/${requestData.code}`;
     const SelfItemCheckOptions = {
       method: 'GET',
       headers: {
@@ -61,28 +57,25 @@ const RequestsModal = ({ isOpen, onClose, requestData, currentUser }) => {
       },
     };
 
-    window.electronAPI
-      .fetchUrl(SelfItemCheck, SelfItemCheckOptions)
-      .then((result) => {
-        if (!result.success) {
-          console.alert(
-            `Erro ao buscar informações do Produto: ${result.error}`,
-          );
-          return onClose();
-        } else {
-          console.log('Produto Encontrado:', result.data);
-          setSelfProductInfo(result.data);
-        }
-      })
-      .catch((error) => {
-        console.alert(
-          'Falha ao executar fetchUrl para buscar informações do Produto:',
-          error,
-        );
-        return onClose();
-      });
+    const selfItemCheckResult = await window.electronAPI.fetchUrl(
+      SelfItemCheck,
+      SelfItemCheckOptions,
+    );
 
-    const RemoteItemCheck = `http://${selfUrl}/produto/info/${requestData.codigoProduto}`;
+    console.log('selfItemCheckResult', selfItemCheckResult);
+    if (!selfItemCheckResult.success || selfItemCheckResult.data.length === 0) {
+      console.alert('Produto não encontrado no estoque local');
+      onClose();
+      return;
+    }
+    const selfProductInfo = selfItemCheckResult.data;
+    console.log('selfProductInfo', selfProductInfo);
+
+    /*
+    VERIFICA SE O ITEM EXISTE NO ESTOQUE DA LOJA QUE SOLICITOU O PRODUTO
+    */
+
+    const RemoteItemCheck = `http://${selfUrl}/produto/info/${requestData.code}`;
     const RemoteItemCheckOptions = {
       method: 'GET',
       headers: {
@@ -90,41 +83,82 @@ const RequestsModal = ({ isOpen, onClose, requestData, currentUser }) => {
       },
     };
 
-    window.electronAPI
-      .fetchUrl(SelfItemCheck, SelfItemCheckOptions)
-      .then((result) => {
-        if (!result.success) {
-          console.alert(
-            `Erro ao buscar informações do Produto: ${result.error}`,
-          );
-          return onClose();
-        }
-        console.log('Produto Encontrado:', result.data);
-        setRemoteProductInfo(result.data);
-      })
-      .catch((error) => {
-        console.alert(
-          'Falha ao executar fetchUrl para buscar informações do Produto:',
-          error,
-        );
-        return onClose();
-      });
+    const remoteItemCheckResult = await window.electronAPI.fetchUrl(
+      RemoteItemCheck,
+      RemoteItemCheckOptions,
+    );
 
-    console.log('A', selfProduct, 'B', selfProductInfo);
-    console.log(config.APIPassword);
-    if (selfProductInfo[0].ESTOQUEATUAL < requestData.quantidade) {
-      console.alert(
+    console.log('remoteItemCheckResult', remoteItemCheckResult);
+    let remoteProductInfo = {};
+    if (
+      !remoteItemCheckResult.success ||
+      remoteItemCheckResult.data.error === true
+    ) {
+      console.log('Produto não encontrado no estoque Remoto.');
+    } else {
+      remoteProductInfo = remoteItemCheckResult.data;
+    }
+
+    console.log('remoteProductInfo', remoteProductInfo);
+
+    /*
+    SE O PRODUTO NÃO EXISTIR NA LOJA QUE O SOLICITOU, CADASTRA-O
+    */
+
+    let productRegistered = false;
+    if (!remoteProductInfo[0]) {
+      console.log('[REQUEST MODAL DEBUG] Cadastrando Produto');
+      const cadastroURL = `http://${baseUrl}/produto/cadastro`;
+      const cadastroOptions = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          PRODUCT: selfProductInfo[0],
+          PASSWORD: config.APIPassword,
+          USERCODE: 1,
+        }),
+      };
+
+      const CadastroResult = await window.electronAPI.fetchUrl(
+        cadastroURL,
+        cadastroOptions,
+      );
+
+      console.log('CadastroResult', CadastroResult);
+      if (!CadastroResult.success) {
+        console.alert(
+          `Erro ao cadastrar o Produto remotamente: ${CadastroResult.error}`,
+        );
+        onClose();
+        return;
+      } else {
+        console.log('Produto cadastrado com sucesso', CadastroResult.data);
+        remoteProductInfo = { ...selfProductInfo };
+        remoteProductInfo[0].ESTOQUEATUAL = 0;
+        productRegistered = true;
+      }
+    }
+
+    /*
+    VERIFICA SE A QUANTIDADE SOLICITADA É MAIOR QUE O ESTOQUE DISPONÍVEL
+    */
+
+    if (selfProductInfo[0].ESTOQUEATUAL < requestData.amount) {
+      console.log(
         'A quantidade solicitada é maior do que o estoque disponível',
       );
-      return onClose();
+      onClose();
+      return;
     }
 
     /*
     ATUALIZA O ESTOQUE LOCAL PARA A NOVA QUANTIDADE DO PRODUTO
     */
 
-    const novaQuantidade =
-      selfProductInfo[0].ESTOQUEATUAL - requestData.quantidade;
+    const novaQuantidade = selfProductInfo[0].ESTOQUEATUAL - requestData.amount;
+    console.log('novaQuantidade', novaQuantidade);
     const updateSelfStock = `http://${baseUrl}/update/produto`;
     const updateSelfStockoptions = {
       method: 'POST',
@@ -132,66 +166,79 @@ const RequestsModal = ({ isOpen, onClose, requestData, currentUser }) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        BARCODE: requestData.codigoProduto,
+        BARCODE: requestData.code,
         QUANTITY: novaQuantidade,
         PASSWORD: config.APIPassword,
         USERCODE: 1,
       }),
     };
 
-    window.electronAPI
-      .fetchUrl(updateSelfStock, updateSelfStockoptions)
-      .then((result) => {
-        if (!result.success) {
-          console.error(`Erro ao atualizar o Estoque: ${result.error}`);
-        } else {
-          console.log('Estoque atualizado com sucesso', result.data);
-        }
-      })
-      .catch((error) => {
-        console.error(
-          'Falha ao executar fetchUrl para Atualizar Estoque:',
-          error,
-        );
-      });
+    const selfUpdateResult = await window.electronAPI.fetchUrl(
+      updateSelfStock,
+      updateSelfStockoptions,
+    );
+
+    let errorMessage = null;
+
+    if (!selfUpdateResult.success) {
+      errorMessage = `Erro ao atualizar o Estoque Local: ${selfUpdateResult.error}`;
+      console.alert(errorMessage);
+    } else {
+      console.log(
+        'Estoque local atualizado com sucesso',
+        selfUpdateResult.data,
+      );
+    }
 
     /*
-      ATUALIZA O ESTOQUE DA LOJA QUE SOLICITOU O PRODUTO
-      */
-
-    const updateRemoteStock = `http://${selfUrl}/update/produto`;
-    const updateRemoteStockoptions = {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        BARCODE: requestData.codigoProduto,
-        QUANTITY: remoteProductInfo[0].ESTOQUEATUAL + requestData.quantidade,
-        PASSWORD: config.APIPassword,
-        USERCODE: 1,
-      }),
-    };
-
-    window.electronAPI
-      .fetchUrl(updateRemoteStock, updateRemoteStockoptions)
-      .then((result) => {
-        if (!result.success) {
-          console.error(`Erro ao atualizar o Estoque Remoto: ${result.error}`);
-        } else {
-          console.log('Estoque remoto atualizado com sucesso', result.data);
-        }
-      })
-      .catch((error) => {
-        console.error(
-          'Falha ao executar fetchUrl para Atualizar Estoque Remoto:',
-          error,
-        );
-      });
-
-    /*
-    ENVIA RESPOSTA DE SUCESSO PARA A LOJA QUE SOLICITOU O PRODUTO
+    ATUALIZA O ESTOQUE DA LOJA QUE SOLICITOU O PRODUTO
     */
+    console.log('remoteProductInfo', remoteProductInfo);
+    if (!errorMessage) {
+      const updateRemoteStock = `http://${selfUrl}/update/produto`;
+      const updateRemoteStockoptions = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          BARCODE: requestData.code,
+          QUANTITY: remoteProductInfo[0].ESTOQUEATUAL + requestData.amount,
+          PASSWORD: config.APIPassword,
+          USERCODE: 1,
+        }),
+      };
+
+      const remoteUpdateResult = await window.electronAPI.fetchUrl(
+        updateRemoteStock,
+        updateRemoteStockoptions,
+      );
+
+      console.log('remoteUpdateResult', remoteUpdateResult);
+      if (!remoteUpdateResult.success) {
+        errorMessage = `Erro ao atualizar o Estoque remoto: ${remoteUpdateResult.error}`;
+        console.alert(errorMessage);
+      } else {
+        console.log(
+          'Estoque remoto atualizado com sucesso',
+          remoteUpdateResult.data,
+        );
+      }
+    }
+
+    /*
+    ENVIA RESPOSTA PARA A LOJA QUE SOLICITOU O PRODUTO
+    */
+
+    const successMessage = productRegistered
+      ? `Solicitação de produto Aceita. O produto '${requestData.name}' foi cadastrado automaticamente, e a quantidade atual é de ${requestData.amount} unidade${
+          requestData.amount > 1 ? 's' : ''
+        }.`
+      : `Solicitação de produto Aceita. ${requestData.amount} unidade${
+          requestData.amount > 1 ? 's' : ''
+        } do produto '${requestData.name}' fo${
+          requestData.amount > 1 ? 'ram' : 'i'
+        } incluida${requestData.amount > 1 ? 's' : ''} no estoque. A quantidade atual é de ${selfProductInfo[0].ESTOQUEATUAL + requestData.amount}. A quantidade anterior era de ${selfProductInfo[0].ESTOQUEATUAL}.`;
 
     const url = `http://${baseUrl}/request/response`;
     const options = {
@@ -200,26 +247,24 @@ const RequestsModal = ({ isOpen, onClose, requestData, currentUser }) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        Senha: config.APIPassword,
-        codigoProduto: requestData.codigoProduto,
-        nomeProduto: requestData.nomeProduto,
-        quantidade: requestData.quantidade,
+        code: requestData.code,
+        name: requestData.name,
+        amount: requestData.amount,
         storeId: currentUser,
+        password: config.APIPassword,
+        status: errorMessage ? 'Erro' : 'Aceito',
+        message: errorMessage || successMessage,
       }),
     };
 
-    window.electronAPI
-      .fetchUrl(url, options)
-      .then((result) => {
-        if (!result.success) {
-          console.error(`Erro ao enviar resposta: ${result.error}`);
-        } else {
-          console.log('Resposta enviada com sucesso', result.data);
-        }
-      })
-      .catch((error) => {
-        console.error('Falha ao executar fetchUrl para responder:', error);
-      });
+    const sendResponseResult = await window.electronAPI.fetchUrl(url, options);
+
+    console.log('sendResponseResult', sendResponseResult);
+    if (!sendResponseResult.success) {
+      console.alert(`Erro ao enviar resposta: ${sendResponseResult.error}`);
+    } else {
+      console.log('Resposta enviada com sucesso', sendResponseResult.data);
+    }
     onClose();
   };
 
@@ -227,7 +272,7 @@ const RequestsModal = ({ isOpen, onClose, requestData, currentUser }) => {
   ENVIA RESPOSTA DE REJEICAO PARA A LOJA QUE SOLICITOU O PRODUTO
   */
 
-  const onReject = () => {
+  const onReject = async () => {
     if (!requestData || !requestData.storeId) {
       console.error('RequestData não informada');
       onClose();
@@ -252,31 +297,27 @@ const RequestsModal = ({ isOpen, onClose, requestData, currentUser }) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        Senha: config.APIPassword,
-        codigoProduto: requestData.codigoProduto,
-        nomeProduto: requestData.nomeProduto,
-        quantidade: requestData.quantidade,
+        code: requestData.code,
+        name: requestData.name,
+        amount: requestData.amount,
         storeId: currentUser,
+        password: config.APIPassword,
+        status: 'Rejected',
+        message: 'Solicitação de produto rejeitada.',
       }),
     };
 
-    window.electronAPI
-      .fetchUrl(url, options)
-      .then((result) => {
-        if (!result.success) {
-          // Mesmo que a requisição falhe, o modal será fechado no `finally`
-          console.error(`Erro ao rejeitar solicitação: ${result.error}`);
-          // Opcional: Mostrar um erro para o usuário
-        } else {
-          console.log('Requisição rejeitada com sucesso:', result.data, url);
-        }
-      })
-      .catch((error) => {
-        console.error('Falha ao executar fetchUrl para rejeitar:', error);
-      })
-      .finally(() => {
-        onClose();
-      });
+    const sendReject = await window.electronAPI.fetchUrl(url, options);
+
+    console.log('sendReject', sendReject);
+    if (!sendReject.success) {
+      console.alert(`Erro ao enviar resposta de rejeição: ${sendReject.error}`);
+      onClose();
+      return;
+    } else {
+      console.log('Resposta de rejeição enviada com sucesso', sendReject.data);
+      onClose();
+    }
   };
 
   return (
@@ -290,13 +331,13 @@ const RequestsModal = ({ isOpen, onClose, requestData, currentUser }) => {
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <p>
-            <strong>Código do Produto:</strong> {requestData?.codigoProduto}
+            <strong>Código do Produto:</strong> {requestData?.code}
           </p>
           <p>
-            <strong>Nome do Produto:</strong> {requestData?.nomeProduto}
+            <strong>Nome do Produto:</strong> {requestData?.name}
           </p>
           <p>
-            <strong>Quantidade:</strong> {requestData?.quantidade}
+            <strong>Quantidade:</strong> {requestData?.amount}
           </p>
         </div>
         <DialogFooter>

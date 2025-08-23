@@ -3,97 +3,85 @@ import Firebird from 'node-firebird';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const PASSW =  "Jk$8@zL!v9qY7#pW"
+const PASSW = 'Jk$8@zL!v9qY7#pW';
 const app = express();
-let resultado
+let resultado;
 
 app.use(express.json());
 
 /*
-* CREDENCIAIS DO BANCO DE DADOS FIREBIRD
-*/
+ * CREDENCIAIS DO BANCO DE DADOS FIREBIRD
+ */
 
 const firebirdOptions = {
-  host: "localhost",
+  host: 'localhost',
   port: 3050,
-  database: "C:\\MAGNO SYSTEM\\PHARMAGNO\\SISGEMP.FDB",
-  user: "SYSDBA",
-  password: "masterkey",
+  database: 'C:\\MAGNO SYSTEM\\PHARMAGNO\\SISGEMP.FDB',
+  user: 'SYSDBA',
+  password: 'masterkey',
   lowercase_keys: false, // Opcional
   role: null, // Opcional
   pageSize: 4096, // Opcional
 };
 // -------------------------------------------------
 
-/**
- * Executa uma query no banco de dados Firebird de forma assíncrona.
- * Esta versão remove a coluna 'VENDAS' do resultado se ela for um objeto (stream/BLOB).
- * @param {string} sql A query SQL a ser executada.
- * @param {Array} [params=[]] Os parâmetros para a query.
- * @returns {Promise<Array<Object>>} Uma promessa que resolve com o resultado da query processado.
+/*
+ * FUNÇÃO GLOBAL PARA REALIZAR A QUERY SQL NO BANCO DE DADOS, A
+ * FUNÇÃO FILTRA RESULTADOS QUE RETORNAM STREAMS PARA QUE A QUERY
+ * FUNCIONE CORRETAMENTE
  */
+
 function FQuery(sql, params = []) {
-    return new Promise((resolve, reject) => {
-        Firebird.attach(firebirdOptions, (err, db) => {
-            if (err) {
-                console.error("Erro de conexão com o Firebird:", err);
-                return reject({
-                    status: 500,
-                    message: "Falha ao conectar no banco de dados.",
-                });
-            }
-
-            db.query(sql, params, (err, result) => {
-                if (err) {
-                    console.error(`Erro ao executar a query: ${sql}`, err);
-                    db.detach();
-                    return reject({ status: 500, message: "Falha ao executar a query." });
-                }
-                
-                // Processa o resultado para remover a coluna VENDAS se for um objeto (stream)
-                const processedResult = result.map(row => {
-                    // A verificação `row.VENDAS && typeof row.VENDAS.pipe === 'function'` é a mais segura
-                    // para identificar um stream da biblioteca node-firebird.
-                    if (row.VENDAS && typeof row.VENDAS.pipe === 'function') {
-                        const { VENDAS, ...rest } = row; // Usa desestruturação para remover a propriedade VENDAS
-                        return rest; // Retorna o objeto sem a propriedade VENDAS
-                    }
-                    return row; // Retorna a linha original se VENDAS não for um stream
-                });
-
-                db.detach(); // A conexão pode ser fechada imediatamente
-                resolve(processedResult);
-            });
+  return new Promise((resolve, reject) => {
+    Firebird.attach(firebirdOptions, (err, db) => {
+      if (err) {
+        console.error('Erro de conexão com o Firebird:', err);
+        // Rejeita a promessa com um objeto de erro padronizado
+        return reject({
+          status: 500,
+          message: 'Falha ao conectar no banco de dados.',
         });
+      }
+
+      db.query(sql, params, (err, result) => {
+        // Garante que a conexão seja sempre fechada
+        db.detach();
+
+        if (err) {
+          console.error(`Erro ao executar a query: ${sql}`, err);
+          return reject({ status: 500, message: 'Falha ao executar a query.' });
+        }
+        // Resolve a promessa com o resultado bem-sucedido
+        resolve(result);
+      });
     });
+  });
 }
 
 /*
-* INICIAR O SERVIDOR UTILIZANDO A FUNÇÃO STARTSERVER
-*/
+ * INICIAR O SERVIDOR UTILIZANDO A FUNÇÃO STARTSERVER
+ */
 
 function startServer(PORT, mainWindow) {
-
-  app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "endpoint.html"));
+  app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'endpoint.html'));
   });
 
-  app.get("/icon.ico", (req, res) => {
-    res.sendFile(path.join(__dirname, "icon.ico"));
+  app.get('/icon.ico', (req, res) => {
+    res.sendFile(path.join(__dirname, 'icon.ico'));
   });
-  
+
   /*
   BUSCA DETALHADA POR PRODUTOS POR CODIGO OU NOME
   */
 
-  app.get("/produto/info/:searchTerm", async (req, res) => {
+  app.get('/produto/info/:searchTerm', async (req, res) => {
     const searchTerm = req.params.searchTerm;
 
-    if (!searchTerm) return res.send("Termo de Busca Inválido");
+    if (!searchTerm) return res.send('Termo de Busca Inválido');
 
     const query = `
           SELECT 
@@ -106,7 +94,7 @@ function startServer(PORT, mainWindow) {
 
     resultado = await FQuery(query, params);
 
-    if (resultado.length === 0) return res.status(404);
+    if (resultado.length === 0) return res.status(404).json({error: true});
 
     res.json(resultado);
   });
@@ -117,10 +105,10 @@ function startServer(PORT, mainWindow) {
   BUSCA SIMPLES POR PRODUTOS COM ESTOQUE MAIOR QUE 0
   */
 
-  app.get("/produto/:searchTerm", async (req, res) => {
+  app.get('/produto/:searchTerm', async (req, res) => {
     const searchTerm = req.params.searchTerm;
 
-    if (!searchTerm) return res.send("Termo de Busca Inválido");
+    if (!searchTerm) return res.send('Termo de Busca Inválido');
 
     const query = `
           SELECT 
@@ -141,11 +129,20 @@ function startServer(PORT, mainWindow) {
     if (resultado.length === 0)
       return res
         .status(404)
-        .json({ message: "Nenhum produto encontrado com o termo informado." });
+        .json({ message: 'Nenhum produto encontrado com o termo informado.' });
 
-        let codigoProduto = 7896181916826, nomeProduto = "Risperidona", quantidade = 1, storeId = "Parque Pinheiros";
-        
-    openRequestModal(mainWindow, codigoProduto, nomeProduto, quantidade, storeId);
+    let codigoProduto = 7896181916826,
+      nomeProduto = 'Risperidona',
+      quantidade = 1,
+      storeId = 'Parque Pinheiros';
+
+    openRequestModal(
+      mainWindow,
+      codigoProduto,
+      nomeProduto,
+      quantidade,
+      storeId,
+    );
     res.json(resultado);
   });
 
@@ -156,15 +153,15 @@ function startServer(PORT, mainWindow) {
   NO BANCO DE DADOS DA LOJA.
   */
 
-  app.get("/convenio/:searchTerm/:password", async (req, res) => {
+  app.get('/convenio/:searchTerm/:password', async (req, res) => {
     const searchTerm = req.params.searchTerm;
     const password = req.params.password;
 
     if (password !== PASSW)
       return res.status(401).json({
-        error: "Senha Inválida",
+        error: 'Senha Inválida',
         succes: false,
-        message: "Senha Inválida",
+        message: 'Senha Inválida',
       });
 
     const query = `SELECT
@@ -231,7 +228,7 @@ ORDER BY c.NOME;`;
     if (resultado.length === 0)
       return res
         .status(404)
-        .json({ message: "Nenhum convênio encontrado com o termo informado." });
+        .json({ message: 'Nenhum convênio encontrado com o termo informado.' });
 
     res.json(resultado);
   });
@@ -248,7 +245,7 @@ ORDER BY c.NOME;`;
 
   */
 
-  app.post("/update/produto", async (req, res) => {
+  app.post('/update/produto', async (req, res) => {
     try {
       /*
       PEGA O CORPO DA REQUISIÇÃO
@@ -279,16 +276,15 @@ ORDER BY c.NOME;`;
       VERIFICAR SE O PRODUTO JÁ EXISTE NO ESTOQUE DA LOJA
       */
 
-      const sql = "SELECT ESTOQUEATUAL FROM PRODUTOS WHERE CODIGO = ?";
+      const sql = 'SELECT ESTOQUEATUAL FROM PRODUTOS WHERE CODIGO = ?';
       const Result = await FQuery(sql, [codigoProduto]);
-
-      if (Result[0].ESTOQUEATUAL === quantity) return res.status(409);
+      if (Result.length === 0) return res.status(404);
 
       /*
       VERIFICAR SE A QUANTIDADE INFORMADA JÁ ESTÁ NO ESTOQUE ANTES DE INSERIR AS MODIFICAÇÕES NO SISTEMA DA LOJA.
       */
 
-      if (Result.length === 0) return res.status(404);
+      if (Result[0].ESTOQUEATUAL === quantity) return res.status(409);
 
       /*
       REALIZAR A ATUALIZAÇÃO DO ESTOQUE
@@ -297,27 +293,29 @@ ORDER BY c.NOME;`;
       const query = `EXECUTE PROCEDURE PROC_ALTERAESTOQUE (?, ?, ?, ?, NULL)`;
       const params = [codigoProduto, quantity, 1, `CesariaApp`];
       resultado = await FQuery(query, params);
-      res.status(200);
+      res.status(200).json(resultado);
     } catch (error) {
       // O catch agora serve como uma segurança extra para outros tipos de erro
-      res.status(error.status || 500);
+      res.status(error.status || 500).json({
+        error: error.message || 'Erro interno do servidor.',
+      });
     }
   });
 
   //------------------------------------------------------------------------
 
   /*
-  * ENDPOINT PARA CADASTRO DE PRODUTOS CASO NÃO HAJA
-  */
+   * ENDPOINT PARA CADASTRO DE PRODUTOS CASO NÃO HAJA
+   */
 
-  app.post("/produto/cadastro", async (req, res) => {
+  app.post('/produto/cadastro', async (req, res) => {
     try {
       /*
       PEGA O CORPO DA REQUISIÇÃO
       */
 
       const produtoData = req.body;
-      const codigoProduto = produtoData.CODIGO;
+      const Produto = produtoData.PRODUCT;
       const senha = produtoData.PASSWORD;
       const userCode = produtoData.USERCODE;
 
@@ -327,9 +325,9 @@ ORDER BY c.NOME;`;
 
       if (!userCode) return res.status(400);
       if (!senha) return res.status(400);
-      if (!codigoProduto) {
+      if (!Produto) {
         return res.status(400).json({
-          error: 'O campo "CODIGO" é obrigatório no corpo da requisição.',
+          error: 'O campo PRODUCT é obrigatório no corpo da requisição.',
         });
       }
 
@@ -343,14 +341,14 @@ ORDER BY c.NOME;`;
       VERIFICAR SE O PRODUTO JÁ TEM CADASTRO
       */
 
-      const queryVerificacao = "SELECT 1 FROM PRODUTOS WHERE CODIGO = ?";
+      const queryVerificacao = 'SELECT 1 FROM PRODUTOS WHERE CODIGO = ?';
       const resultadoVerificacao = await FQuery(queryVerificacao, [
-        codigoProduto,
+        Produto.CODIGO,
       ]);
 
       if (resultadoVerificacao.length > 0) {
         return res.status(409).json({
-          error: `O produto com o código ${codigoProduto} já existe.`, 
+          error: `O produto com o código ${Produto.CODIGO} já existe.`,
         });
       }
 
@@ -358,54 +356,62 @@ ORDER BY c.NOME;`;
       SE NÃO EXISTIR, PROSSEGUIR COM O CADASTRO
       */
 
-      produtoData.ESTOQUEATUAL = 0;
+      Produto.ESTOQUEATUAL = 0;
 
-      const colunas = Object.keys(produtoData);
-      const valores = Object.values(produtoData);
+      const colunas = Object.keys(Produto);
+      const valores = Object.values(Produto);
 
-      const placeholders = colunas.map(() => "?").join(", ");
+      const placeholders = colunas.map(() => '?').join(', ');
 
       const queryCadastro = `INSERT INTO PRODUTOS (${colunas.join(
-        ", "
+        ', ',
       )}) VALUES (${placeholders})`;
 
       await FQuery(queryCadastro, valores);
 
       res.status(201).json({
         success: true,
-        message: `Produto ${codigoProduto} cadastrado com sucesso.`, 
+        message: `Produto ${Produto.CODIGO} cadastrado com sucesso.`,
       });
     } catch (error) {
       res
         .status(error.status || 500)
-        .json({ error: error.message || "Erro interno do servidor." });
+        .json({ error: error.message || 'Erro interno do servidor.' });
     }
   });
 
   //------------------------------------------------------------------------
 
-
   /*
   CRIA UMA SOLICITAÇÃO DE TRANSFERENCIA DE PRODUTO
   */
 
-  app.post("/request", (req, res) => {
-    const { Senha, codigo, nomeProduto, quantidade, storeId } = req.body;
+  app.post('/request', (req, res) => {
+    const { code, name, amount, storeId, password } = req.body;
 
-    if (!Senha || !codigo || !nomeProduto || !quantidade || !storeId) {
-      return res.status(400).json({ message: "Todos os campos são obrigatórios." });
+    if (!code || !name || !amount || !storeId || !password) {
+      return res
+        .status(400)
+        .json({ message: 'Todos os campos são obrigatórios.' });
     }
 
-    if (Senha !== PASSW) {
-      return res.status(401).json({ message: "Senha inválida." });
+    if (password !== PASSW) {
+      return res.status(401).json({ message: 'Senha inválida.' });
     }
 
-    console.log("Solicitação de produto recebida:\n", { codigo, nomeProduto, quantidade, storeId });
+    console.log('Solicitação de produto recebida:\n', {
+      code,
+      name,
+      amount,
+      storeId,
+    });
 
-    // Call the function to open the modal in the renderer process
-    openRequestModal(mainWindow, codigo, nomeProduto, quantidade);
+    openRequestModal(mainWindow, req.body);
 
-    res.status(200).json({ success: true, message: "Solicitação de produto recebida com sucesso." });
+    res.status(200).json({
+      success: true,
+      message: 'Solicitação de produto recebida com sucesso.',
+    });
   });
 
   //----------------------------------------------------------------------
@@ -414,25 +420,43 @@ ORDER BY c.NOME;`;
   RECEBE UMA RESPOSTA DE REQUISIÇÃO E MOSTRA AS INFORMAÇÕES NA TELA
   */
 
-  app.post("/request/response", (req, res) => {
-    const { Senha, codigoProduto, nomeProduto, quantidade, storeId } = req.body;
-    console.log("Resposta de solicitação de produto recebida:\n", req.body)
+  app.post('/request/response', (req, res) => {
+    const { code, name, amount, storeId, password, status, message } = req.body;
 
-    if (!codigoProduto || !nomeProduto || !quantidade || !storeId) {
-      return res.status(400).json({ message: "Todos os campos são obrigatórios." });
+    if (
+      !code ||
+      !name ||
+      !amount ||
+      !storeId ||
+      !password ||
+      !status ||
+      !message
+    ) {
+      return res
+        .status(400)
+        .json({ message: 'Todos os campos são obrigatórios.' });
     }
 
-    if (Senha !== PASSW) {
-      return res.status(401).json({ message: "Senha inválida." });
+    if (password !== PASSW) {
+      return res.status(401).json({ message: 'Senha inválida.' });
     }
 
-    console.log("Resposta de solicitação de produto recebida:\n", { codigoProduto, nomeProduto, quantidade, storeId });
+    console.log(
+      '[SERVER DEBUG] Resposta de solicitação de produto recebida:\n',
+      {
+        status,
+        message,
+      },
+    );
 
     // Call the function to open the modal in the renderer process
-    console.log("Chamando Modal de Resposta de Requisição")
-    openRequestResponseModal(mainWindow, codigoProduto, nomeProduto, quantidade, storeId);
+    console.log('Chamando Modal de Resposta de Requisição');
+    openRequestResponseModal(mainWindow, req.body);
 
-    res.status(200).json({ success: true, message: "resposta de solicitação recebida com sucesso." });
+    res.status(200).json({
+      success: true,
+      message: 'resposta de solicitação recebida com sucesso.',
+    });
   });
 
   /*
@@ -440,32 +464,31 @@ ORDER BY c.NOME;`;
   */
 
   app.listen(PORT, () => {
-    console.log("Servidor Rodando");
+    console.log('Servidor Rodando');
     // Example: Send a message to the renderer process when the server starts
     if (mainWindow) {
-      mainWindow.webContents.send('server-started', `Servidor Express rodando na porta ${PORT}`);
+      mainWindow.webContents.send(
+        'server-started',
+        `Servidor Express rodando na porta ${PORT}`,
+      );
     }
   });
 
-  function openRequestResponseModal(mainWindow, codigoProduto, nomeProduto, quantidade, storeId) {
-
+  function openRequestResponseModal(mainWindow, data) {
     if (mainWindow) {
-      console.log("Abrindo Modal de Resposta de Requisição", { codigoProduto, nomeProduto, quantidade })
-      mainWindow.webContents.send("open-request-response-modal", { codigoProduto, nomeProduto, quantidade, storeId });
+      mainWindow.webContents.send('open-request-response-modal', { ...data });
     } else {
-      console.error("mainWindow não está definido.")
+      console.error('Mainwindow não está definido.');
     }
   }
 
-  // Function to open the RequestsModal in the renderer process
-  function openRequestModal(mainWindow, codigoProduto, nomeProduto, quantidade, storeId) {
+  function openRequestModal(mainWindow, data) {
     if (mainWindow) {
-      console.log("Abrindo Modal de Requisições", { codigoProduto, nomeProduto, quantidade })
-      mainWindow.webContents.send("open-request-modal", { codigoProduto, nomeProduto, quantidade, storeId });
+      mainWindow.webContents.send('open-request-modal', { ...data });
     } else {
-      console.error("mainWindow não está definido.");
+      console.error('MainWindow não está definido.');
     }
   }
 }
 
-export default startServer
+export default startServer;

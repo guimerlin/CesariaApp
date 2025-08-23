@@ -70,14 +70,14 @@ const AppContent = () => {
     const handleOpenRequestModal = (event, data) => {
       console.log('[DEBUG] Evento IPC recebido:', event); // NOVO LOG
       setRequestsModalData(event);
-      console.log('[DEBUG] Abrindo modal de solicitação:', data);
+      console.log('[DEBUG] Abrindo modal de solicitação:', event);
       setIsRequestsModalOpen(true);
     };
     
     const handleOpenRequestResponseModal = (event, data) => {
       console.log('[DEBUG] Evento IPC Response recebido:', event); // NOVO LOG
       setRequestsResponseModalData(event);
-      console.log('[DEBUG] Abrindo modal de Resposta de solicitação:', data);
+      console.log('[DEBUG] Abrindo modal de Resposta de solicitação:', event);
       setIsRequestsResponseModalOpen(true);
     };
 
