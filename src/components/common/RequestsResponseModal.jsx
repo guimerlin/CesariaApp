@@ -13,7 +13,7 @@ const RequestsResponseModal = ({ isOpen, onClose, requestData, currentUser }) =>
   if (!isOpen) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen}>
       <DialogContent className="sm:max-w-[425px] bg-white">
         <DialogHeader>
           <DialogTitle>Resposta de Solicitação</DialogTitle>

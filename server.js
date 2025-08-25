@@ -26,6 +26,7 @@ const pool = Firebird.pool(5, {
   lowercase_keys: false, // Opcional
   role: null, // Opcional
   pageSize: 4096, // Opcional
+  blobAsText: true,
 });
 // -------------------------------------------------
 

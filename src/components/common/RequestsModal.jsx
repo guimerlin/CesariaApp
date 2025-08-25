@@ -83,12 +83,10 @@ const RequestsModal = ({ isOpen, onClose, requestData, currentUser }) => {
    * Função principal otimizada para processar a transferência de produtos entre estoques.
    */
   const onSend = async () => {
-    // Define as URLs base. É importante que a `baseUrl` seja definida antes do try/catch
-    // para que possa ser usada no envio de respostas de erro.
-    // const selfUrl = config.endpoints[currentUser];
-    // const baseUrl = config.endpoints[requestData.storeId];
-    const selfUrl = 'localhost:3000'; // URL da loja local
-    const baseUrl = 'localhost:3000'; // URL da loja que fez a solicitação
+    const selfUrl = config.endpoints[currentUser];
+    const baseUrl = config.endpoints[requestData.storeId];
+    // const selfUrl = 'localhost:3000'; // usado para testes
+    // const baseUrl = 'localhost:3000'; // Usado para testes
 
     try {
       // --- 1. VALIDAÇÃO INICIAL DOS ENDPOINTS ---
@@ -263,7 +261,7 @@ const RequestsModal = ({ isOpen, onClose, requestData, currentUser }) => {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen}>
       <DialogContent className="bg-white sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Solicitação de Produto</DialogTitle>

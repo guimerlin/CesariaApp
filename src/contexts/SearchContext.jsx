@@ -37,7 +37,7 @@ export const SearchContextProvider = ({ children }) => {
       password: config.APIPassword,
     };
 
-    const fetchUrl = `http://${url}/request`;
+    const fetchUrl = `https://${url}/request`;
     const options = {
       method: 'POST',
       body: JSON.stringify(requestBody),
@@ -79,7 +79,7 @@ export const SearchContextProvider = ({ children }) => {
     for (const [storeName, url] of Object.entries(endpoints)) {
       let promise;
       if (searchType === 'convenio') {
-        const fetchUrl = `http://${url}/cliente/convenio`;
+        const fetchUrl = `https://${url}/cliente/convenio`;
         console.log(`Buscando em: ${fetchUrl} (POST)`);
         const options = {
           method: 'POST',
@@ -104,7 +104,7 @@ export const SearchContextProvider = ({ children }) => {
             return { storeName, error: error.message };
           });
       } else {
-        const fetchUrl = `http://${url}/${searchType}/${searchTerm}`;
+        const fetchUrl = `https://${url}/${searchType}/${searchTerm}`;
         console.log(`Buscando em: ${fetchUrl} (GET)`);
         promise = window.electronAPI
           .fetchUrl(fetchUrl)
