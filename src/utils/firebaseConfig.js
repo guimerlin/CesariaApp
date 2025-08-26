@@ -1,10 +1,12 @@
 // firebaseConfig.js - Configuração centralizada do Firebase para React
 
 import { initializeApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
 import { getDatabase } from 'firebase/database';
+import { getFirestore } from 'firebase/firestore';
 
 /**
- * Configuração do Firebase Realtime Database
+ * Configuração do Firebase
  * Esta configuração é compartilhada entre todas as páginas do aplicativo
  */
 const firebaseConfig = {
@@ -18,16 +20,18 @@ const firebaseConfig = {
 };
 
 /**
- * Inicializa o Firebase e retorna a instância do banco de dados
- * @returns {Object} Objeto contendo app e db do Firebase
+ * Inicializa o Firebase e retorna as instâncias dos serviços
+ * @returns {Object} Objeto contendo app, db (RTDB), firestore e auth
  */
 export function initializeFirebase() {
   console.log('[DEBUG] Inicializando Firebase...');
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
-  console.log('[DEBUG] Firebase inicializado.');
+  const firestore = getFirestore(app);
+  const auth = getAuth(app);
+  console.log('[DEBUG] Firebase inicializado com RTDB, Firestore e Auth.');
 
-  return { app, db };
+  return { app, db, firestore, auth };
 }
 
 /**
@@ -35,8 +39,13 @@ export function initializeFirebase() {
  */
 export const APP_CONFIG = {
   appId: 'default-app-id',
-  basePath: 'artifacts/default-app-id/public/data',
+  basePath: 'artifacts/default-app-id/public/data', // Esta path pode ser obsoleta com Firestore
 };
 
-// Instância global do Firebase para uso em toda a aplicação
-export const { app: firebaseApp, db: firebaseDb } = initializeFirebase();
+// Instâncias globais do Firebase para uso em toda a aplicação
+export const {
+  app: firebaseApp,
+  db: firebaseDb,
+  firestore: firebaseFirestore,
+  auth: firebaseAuth,
+} = initializeFirebase();

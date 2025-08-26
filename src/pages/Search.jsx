@@ -1,16 +1,15 @@
 import React, { useState, useCallback } from 'react';
-import {
-  SearchContextProvider,
-  useSearchContext,
-} from '../contexts/SearchContext';
+import { useSearchContext } from '../contexts/SearchContext';
 import { useChat } from '../contexts/ChatContext';
+import { useUser } from '../contexts/UserContext';
 import SearchSection from '../components/stock/SearchSection';
 import StatusArea from '../components/stock/StatusArea';
 import ResultsTable from '../components/stock/ResultsTable';
 import QuantityModal from '../components/stock/QuantityModal';
 
 const SearchContent = () => {
-  const { currentUser, dbService } = useChat();
+  const { currentUser } = useUser();
+  const { allUsers } = useChat();
   const {
     searchResults,
     isLoading,
@@ -19,6 +18,7 @@ const SearchContent = () => {
     clearSearch,
     sendProductRequest,
   } = useSearchContext();
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isQuantityModalOpen, setIsQuantityModalOpen] = useState(false);
@@ -40,11 +40,21 @@ const SearchContent = () => {
   }, []);
 
   const handleQuantityConfirm = useCallback(async (product, quantity) => {
-    sendProductRequest(product.storeId, product, quantity, dbService, currentUser);
-    alert(
-      `Solicitação de ${quantity} unidade(s) do produto "${product.PRODUTO}" enviada para ${product.storeId}.`,
-    );
-  }, []);
+    const targetStore = allUsers.find(user => user.name === product.storeId);
+    if (!targetStore || !targetStore.apiLink) {
+        alert(`Erro: Não foi possível encontrar o Link da API para a loja ${product.storeId}.`);
+        return;
+    }
+
+    try {
+        await sendProductRequest(targetStore.apiLink, product, quantity);
+        alert(
+          `Solicitação de ${quantity} unidade(s) do produto "${product.PRODUTO}" enviada para ${product.storeId}.`
+        );
+    } catch (error) {
+        alert(`Falha ao enviar solicitação: ${error.message}`);
+    }
+  }, [sendProductRequest, allUsers]); // Corrected dependency array
 
   if (!currentUser) {
     return (
@@ -68,7 +78,7 @@ const SearchContent = () => {
               TRANSFERENCIA DE PRODUTOS
             </h1>
             <p className="text-sm text-gray-600">
-              Logado como: <span className="font-medium">{currentUser}</span>
+              Logado como: <span className="font-medium">{currentUser.name}</span>
             </p>
           </div>
 
@@ -128,10 +138,10 @@ const SearchContent = () => {
   );
 };
 
+// The main Search component no longer needs to provide the context,
+// as it's now provided at the top level in App.jsx
 const Search = () => (
-  <SearchContextProvider>
     <SearchContent />
-  </SearchContextProvider>
 );
 
 export default Search;

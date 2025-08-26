@@ -1,143 +1,109 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import config from '../../config.json';
+import { useUser } from './UserContext';
+import { useChat } from './ChatContext'; // Import useChat to get all users
 
 const SearchContext = createContext(null);
 
 export const SearchContextProvider = ({ children }) => {
+  const { currentUser } = useUser();
+  const { allUsers } = useChat(); // Get all users from ChatContext
   const [searchResults, setSearchResults] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
 
+  // This function remains the same, it sends a request to a specific target
   async function sendProductRequest(
-    targetStore,
+    targetApiLink,
     productInfo,
-    quantidade,
-    currentUser,
+    quantidade
   ) {
-    console.log('[PRODUCT REQUEST] Enviando solicitação de produto:', {
-      targetStore,
-      productInfo,
-      quantidade,
-      currentUser,
-    });
-
-    const endpoints = config.endpoints || {};
-    const url = endpoints[targetStore];
-
-    if (!url) {
-      console.error(`[PRODUCT REQUEST] URL para a loja ${targetStore} não encontrada.`);
-      throw new Error(`Endpoint para a loja ${targetStore} não configurado.`);
-    }
+    if (!currentUser) throw new Error("Usuário não logado.");
 
     const requestBody = {
       code: productInfo.CODIGO,
       name: productInfo.PRODUTO,
       amount: quantidade,
-      storeId: currentUser,
-      password: config.APIPassword,
+      storeId: currentUser.name,
+      password: currentUser.config?.APIPassword,
     };
 
-    const fetchUrl = `https://${url}/request`;
+    const fetchUrl = `https://${targetApiLink}/request`;
     const options = {
       method: 'POST',
       body: JSON.stringify(requestBody),
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
     };
 
     try {
-      console.log(`[PRODUCT REQUEST] Enviando requisição para: ${fetchUrl}`);
       const result = await window.electronAPI.fetchUrl(fetchUrl, options);
-      console.log('[PRODUCT REQUEST] Resultado da requisição:', result);
-
       if (!result.success) {
-        throw new Error(
-          `Erro na solicitação para ${targetStore}: ${result.error || result.message}`,
-        );
+        throw new Error(`Erro na solicitação: ${result.error || result.message}`);
       }
-
       return result;
     } catch (error) {
-      console.error(
-        `[PRODUCT REQUEST] Falha ao enviar solicitação para ${targetStore}:`,
-        error,
-      );
+      console.error(`[PRODUCT REQUEST] Falha ao enviar solicitação:`, error);
       throw error;
     }
   }
 
+  // This function is now corrected to search across all users with an apiLink
   const search = useCallback(async (searchTerm, searchType) => {
-    setIsLoading(true);
-    setStatusMessage('Buscando...');
-    setSearchResults({});
-    console.log(`Iniciando busca por "${searchTerm}" do tipo "${searchType}"`);
-
-    const endpoints = config.endpoints || {};
-    const promises = [];
-
-    for (const [storeName, url] of Object.entries(endpoints)) {
-      let promise;
-      if (searchType === 'convenio') {
-        const fetchUrl = `https://${url}/cliente/convenio`;
-        console.log(`Buscando em: ${fetchUrl} (POST)`);
-        const options = {
-          method: 'POST',
-          body: JSON.stringify({
-            searchTerm: searchTerm,
-            password: config.APIPassword,
-          }),
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        };
-        promise = window.electronAPI
-          .fetchUrl(fetchUrl, options)
-          .then((result) => {
-            if (!result.success) {
-              throw new Error(`Erro na loja ${storeName}: ${result.error}`);
-            }
-            return { storeName, data: result.data.data };
-          })
-          .catch((error) => {
-            console.error(`Falha ao buscar dados da loja ${storeName}:`, error);
-            return { storeName, error: error.message };
-          });
-      } else {
-        const fetchUrl = `https://${url}/${searchType}/${searchTerm}`;
-        console.log(`Buscando em: ${fetchUrl} (GET)`);
-        promise = window.electronAPI
-          .fetchUrl(fetchUrl)
-          .then((result) => {
-            if (!result.success) {
-              throw new Error(`Erro na loja ${storeName}: ${result.error}`);
-            }
-            return { storeName, data: result.data.data };
-          })
-          .catch((error) => {
-            console.error(`Falha ao buscar dados da loja ${storeName}:`, error);
-            return { storeName, error: error.message };
-          });
-      }
-      promises.push(promise);
+    if (!currentUser) {
+      setStatusMessage('Usuário não logado.');
+      return;
     }
+
+    setIsLoading(true);
+    setStatusMessage('Buscando em todas as lojas...');
+    setSearchResults({});
+    console.log(`Iniciando busca global por "${searchTerm}"`);
+
+    const promises = allUsers
+      .filter(user => user.apiLink) // Ensure the user has an API link
+      .map(user => {
+        const { apiLink, name: storeName, config } = user;
+        let promise;
+
+        if (searchType === 'convenio') {
+          const fetchUrl = `https://${apiLink}/cliente/convenio`;
+          const options = {
+            method: 'POST',
+            body: JSON.stringify({ searchTerm, password: config?.APIPassword }),
+            headers: { 'Content-Type': 'application/json' },
+          };
+          promise = window.electronAPI.fetchUrl(fetchUrl, options);
+        } else {
+          const fetchUrl = `https://${apiLink}/${searchType}/${searchTerm}`;
+          promise = window.electronAPI.fetchUrl(fetchUrl);
+        }
+
+        return promise
+          .then(result => {
+            if (!result.success) throw new Error(result.error || `Erro na loja ${storeName}`);
+            return { storeName, data: result.data.data };
+          })
+          .catch(error => {
+            console.error(`Falha ao buscar dados da loja ${storeName}:`, error);
+            return { storeName, error: error.message, data: [] }; // Return empty data on error
+          });
+      });
 
     const results = await Promise.all(promises);
 
     const newResults = {};
     let totalResults = 0;
-    results.forEach((result) => {
-      if (result.data && Array.isArray(result.data)) {
+    results.forEach(result => {
+      if (result.data && Array.isArray(result.data) && result.data.length > 0) {
         newResults[result.storeName] = result.data;
         totalResults += result.data.length;
       }
     });
 
     setSearchResults(newResults);
-    setStatusMessage(`${totalResults} resultado(s) encontrado(s).`);
+    setStatusMessage(`${totalResults} resultado(s) encontrado(s) em ${results.length} loja(s).`);
     setIsLoading(false);
     console.log('Busca finalizada.', { newResults, totalResults });
-  }, []);
+  }, [currentUser, allUsers]);
 
   const clearSearch = useCallback(() => {
     setSearchResults({});

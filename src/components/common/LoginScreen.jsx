@@ -1,41 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { useUser } from '../../contexts/UserContext';
+import { Separator } from '../ui/separator';
 
-const LoginScreen = ({ onLogin, isVisible }) => {
-  const [username, setUsername] = useState('');
-  const [loginStatus, setLoginStatus] = useState('');
+const LoginScreen = ({ onShowCreateAccount }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const { signInWithEmail, signInWithGoogle, error } = useUser();
 
-  useEffect(() => {
-    // Carrega o último nome de usuário do localStorage
-    const lastUsername = localStorage.getItem('lastUsername');
-    if (
-      lastUsername &&
-      lastUsername.trim() &&
-      lastUsername.toLowerCase() !== 'null'
-    ) {
-      setUsername(lastUsername);
-    }
-  }, []);
-
-  const handleLogin = () => {
-    const trimmedUsername = username.trim();
-    if (!trimmedUsername || trimmedUsername.toLowerCase() === 'null') {
-      setLoginStatus('Digite um nome de usuário válido.');
-      return;
-    }
-
-    localStorage.setItem('lastUsername', trimmedUsername);
-    onLogin(trimmedUsername);
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    await signInWithEmail(email, password);
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      handleLogin();
-    }
+  const handleGoogleLogin = async () => {
+    await signInWithGoogle();
   };
-
-  if (!isVisible) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-200">
@@ -50,24 +31,50 @@ const LoginScreen = ({ onLogin, isVisible }) => {
           }}
         />
         <h1 className="mb-2 text-2xl font-bold text-red-700">Cesaria Chat</h1>
-        <p className="mb-6 text-gray-600">Entre com seu nome de usuário</p>
-        <Input
-          type="text"
-          placeholder="Seu nome de usuário"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          onKeyDown={handleKeyDown}
-          className="mb-4 w-full focus:ring-2 focus:ring-red-400"
-        />
+        <p className="mb-6 text-gray-600">Faça login para continuar</p>
+
+        <form onSubmit={handleLogin} className="w-full space-y-4">
+          <Input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full focus:ring-2 focus:ring-red-400"
+          />
+          <Input
+            type="password"
+            placeholder="Senha"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full focus:ring-2 focus:ring-red-400"
+          />
+          {error && <p className="text-sm text-red-500">{error}</p>}
+          <Button
+            type="submit"
+            className="w-full bg-red-600 font-semibold text-white transition-colors duration-200 hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+          >
+            Entrar
+          </Button>
+        </form>
+
+        <Separator className="my-4" />
+
         <Button
-          onClick={handleLogin}
-          className="w-full bg-red-600 font-semibold text-white transition-colors duration-200 hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+          onClick={handleGoogleLogin}
+          variant="outline"
+          className="w-full"
         >
-          Entrar
+          Entrar com Google
         </Button>
-        {loginStatus && (
-          <p className="mt-4 h-5 text-sm text-red-500">{loginStatus}</p>
-        )}
+
+        <div className="mt-6 text-center">
+          <p className="text-sm text-gray-600">
+            Não tem uma conta?{' '}
+            <Button variant="link" className="p-0 text-red-600" onClick={onShowCreateAccount}>
+              Crie uma agora
+            </Button>
+          </p>
+        </div>
       </div>
     </div>
   );
