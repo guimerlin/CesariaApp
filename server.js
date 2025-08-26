@@ -3,11 +3,27 @@ import Firebird from 'node-firebird';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { Buffer } from 'buffer';
+import fs from 'fs/promises';
+
+async function carregarConfiguracao() {
+    try {
+        const data = await fs.readFile('./config.json', 'utf8');
+        const config = JSON.parse(data);
+        console.log(config.APIPassword);
+        return config;
+    } catch (error) {
+        console.error('Erro ao carregar o arquivo de configuração:', error);
+    }
+}
+
+const config = await carregarConfiguracao();
+
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const PASSW = 'Jk$8@zL!v9qY7#pW';
+const PASSW = config.APIPassword;
 const app = express();
 let resultado;
 
@@ -79,6 +95,126 @@ async function FQuery(sql, params = []) {
     if (connection) {
       connection.detach();
     }
+  }
+}
+
+/*
+VERIFICA SE O PRODUTO EXISTE NO ESTOQUE LOCAL E RETORNA O RESULTADO DA PESQUIA
+COM TODOS OS PRODUTOS ENCONTRADOS E TODOS OS CAMPOS DOS PRODUTOS.
+*/
+
+async function verifyProduct(Produto) {
+  const queryVerificacao = 'SELECT * FROM PRODUTOS WHERE CODIGO = ?';
+  const resultadoVerificacao = await FQuery(queryVerificacao, [Produto.CODIGO]);
+
+  if (resultadoVerificacao.length > 0) {
+    return {
+      status: 200,
+      success: true,
+      message: `O produto com o código ${Produto.CODIGO} já existe.`,
+      data: resultadoVerificacao,
+    };
+  }
+  return {
+    status: 404,
+    success: false,
+    message: 'Produto não encontrado.',
+    data: resultadoVerificacao,
+  };
+}
+
+/*
+CADASTRA UM PRODUTO NA LOJA, SEMPRE DEVE SER CHAMADO COM UM OBJETO COMPLETO
+DO PRODUTO, CONTENDO TODOS OS CAMPOS DE CADASTRO DO PRODUTO. 
+*/
+
+async function cadastro(Produto) {
+  try {
+    /*
+    VERIFICAR SE O PRODUTO JÁ TEM CADASTRO
+    */
+
+    const Verification = await verifyProduct(Produto);
+    if (Verification.success) return Verification;
+
+    /*
+    SE NÃO EXISTIR, PROSSEGUIR COM O CADASTRO
+    */
+
+    Produto.ESTOQUEATUAL = 0;
+
+    const colunas = Object.keys(Produto);
+    const valores = Object.values(Produto);
+
+    const placeholders = colunas.map(() => '?').join(', ');
+
+    const queryCadastro = `INSERT INTO PRODUTOS (${colunas.join(
+      ', ',
+    )}) VALUES (${placeholders})`;
+
+    const RespQuery = await FQuery(queryCadastro, valores);
+
+    return {
+      status: 201,
+      success: true,
+      message: `Produto ${Produto.CODIGO} cadastrado com sucesso.`,
+      data: RespQuery,
+    };
+  } catch (error) {
+    return {
+      status: error.status || 500,
+      success: false,
+      message: error.message || 'Erro interno do servidor.',
+    };
+  }
+}
+
+/*
+ATUALIZA O ESTOQUE LOCAL DE UM PRODUTO PARA A QUANTIDADE INFORMADA,
+NÃO REALIZA O CADASTRO AUTOMATICAMENTE, SE O PRODUTO NÃO EXISTIR
+NO ESTOQUE, RETORNA UM ERRO 404 DE PRODUTO NÃO ENCONTRADO.
+*/
+
+async function atualizarEstoque(Produto, quantity) {
+  const codigoProduto = Produto.CODIGO;
+  try {
+    /*
+    VERIFICAR SE O PRODUTO JÁ EXISTE NO ESTOQUE DA LOJA
+    */
+
+    const Verification = await verifyProduct(Produto);
+    if (!Verification.success) return Verification;
+
+    /*
+    VERIFICAR SE A QUANTIDADE INFORMADA JÁ ESTÁ NO ESTOQUE ANTES DE INSERIR AS MODIFICAÇÕES NO SISTEMA DA LOJA.
+    */
+
+    if (Verification.data[0].ESTOQUEATUAL === quantity)
+      return {
+        status: 409,
+        success: false,
+        message: 'A quantidade informada já está no estoque.',
+      };
+
+    /*
+    REALIZAR A ATUALIZAÇÃO DO ESTOQUE
+    */
+
+    const query = `EXECUTE PROCEDURE PROC_ALTERAESTOQUE (?, ?, ?, ?, NULL)`;
+    const params = [codigoProduto, quantity, 1, `CesariaApp`];
+    resultado = await FQuery(query, params);
+    return {
+      status: 200,
+      success: true,
+      message: 'Estoque atualizado com sucesso.',
+      data: resultado,
+    };
+  } catch (error) {
+    return {
+      status: error.status || 500,
+      success: false,
+      message: error.message || 'Erro interno do servidor.',
+    };
   }
 }
 
@@ -541,6 +677,69 @@ ORDER BY c.NOME;`;
       success: true,
       message: 'resposta de solicitação recebida com sucesso.',
     });
+  });
+
+  /*
+  SOLICITA A TRANSFERENCIA DO PRODUTO, CASO NÃO TENHA CADASTRO, CRIA ELE E ADICIONA
+  A QUANTIDADE INFORMADA EM ESTOQUE, RETORNA UMA RESPOSTA DE SUCESSO QUE FAZ COM
+  QUE O APP PROSSIGA COM A ATUALIZAÇÃO DE ESTOQUE DA LOJA QUE ENVIOU A TRANSFERENCIA.
+  */
+
+  app.post('/transfer', async (req, res) => {
+    const { product, amount, storeId, password } = req.body;
+
+    if (!product || !amount || !storeId || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Todos os campos são obrigatórios.',
+      });
+    }
+
+    if (password !== PASSW) {
+      return res
+        .status(401)
+        .json({ success: false, message: 'Senha inválida.' });
+    }
+
+    /*
+    NESSE CASO AMOUNT É O TANTO QUE SERÁ ADICIONADO, E NÃO O VALOR FINAL
+    */
+
+    const emEstoque = await verifyProduct(product);
+    if (!emEstoque.success) {
+      res.status(500).json({
+        success: false,
+        message: 'Erro ao determinar estoque local.',
+        data: emEstoque,
+      });
+    };
+
+    const novaQuantidade = emEstoque.data[0].ESTOQUEATUAL + amount;
+
+    try {
+      let upStock = await atualizarEstoque(product, novaQuantidade);
+      if (!upStock.success) {
+        const cadatroProduto = await cadastro(product);
+        if (!cadatroProduto.success) {
+          throw new Error(cadatroProduto.message);
+        }
+        upStock = await atualizarEstoque(product, novaQuantidade);
+        if (!upStock.success) {
+          throw new Error(upStock.message);
+        }
+      }
+      res.status(200).json({
+        success: true,
+        message: 'Transferência realizada com sucesso.',
+        data: upStock,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: error.message || 'Erro interno do servidor',
+        data: error,
+      });
+    }
   });
 
   /*

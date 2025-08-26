@@ -83,10 +83,10 @@ const RequestsModal = ({ isOpen, onClose, requestData, currentUser }) => {
    * Função principal otimizada para processar a transferência de produtos entre estoques.
    */
   const onSend = async () => {
-    const selfUrl = config.endpoints[currentUser];
-    const baseUrl = config.endpoints[requestData.storeId];
-    // const selfUrl = 'localhost:3000'; // usado para testes
-    // const baseUrl = 'localhost:3000'; // Usado para testes
+    // const selfUrl = config.endpoints[currentUser];
+    // const baseUrl = config.endpoints[requestData.storeId];
+    const selfUrl = "localhost:3000";
+    const baseUrl = "localhost:3000"
 
     try {
       // --- 1. VALIDAÇÃO INICIAL DOS ENDPOINTS ---
@@ -106,125 +106,50 @@ const RequestsModal = ({ isOpen, onClose, requestData, currentUser }) => {
         throw new Error('Produto não encontrado no estoque local.');
       }
       const localProduct = localProductData[0];
-      console.log('[DEBUG] localProduct definido:', localProduct);
-      console.log(localProductData);
 
-      console.log(
-        `[DEBUG] Verificando estoque local. localProduct.ESTOQUEATUAL = ${localProduct.ESTOQUEATUAL}`,
-      );
       if (localProduct.ESTOQUEATUAL < requestData.amount) {
         throw new Error(
           'A quantidade solicitada é maior que o estoque disponível.',
         );
       }
 
-      // --- 3. VERIFICAÇÃO E CADASTRO DO PRODUTO REMOTO ---
-      let remoteProduct;
-      let productRegistered = false;
-      try {
-        // Tenta buscar o produto no estoque da loja remota
-        console.log('[DEBUG] Tentando buscar produto remoto...');
-        const remoteProductData = await apiCall(
-          `http://${baseUrl}/produto/info/${requestData.code}`,
-          { method: 'GET' },
-        );
+      // --- 3. TRANSFERÊNCIA REMOTA ---
+      // O endpoint /transfer no servidor de destino vai:
+      // a) Cadastrar o produto se ele não existir.
+      // b) Adicionar a quantidade transferida ao estoque existente.
+      await apiCall(`http://${baseUrl}/transfer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          product: localProduct,
+          amount: requestData.amount,
+          storeId: currentUser,
+          password: config.APIPassword,
+        }),
+      });
 
-        // Este bloco só deve ser executado se a API retornar success: true
-        if (!remoteProductData || remoteProductData.length === 0) {
-          // Se a API retornar success: true com dados vazios, forçamos o erro para cadastrar.
-          throw new Error(
-            'API retornou sucesso, mas sem dados do produto remoto.',
-          );
-        }
-
-        remoteProduct = remoteProductData[0];
-        console.log(
-          '[DEBUG] Produto remoto encontrado via API. remoteProduct:',
-          remoteProduct,
-        );
-      } catch (error) {
-        // Este bloco é executado se a apiCall falhar (success: false)
-        console.log(
-          `[DEBUG] Entrou no CATCH para produto remoto. Erro: ${error.message}`,
-        );
-        console.log('[DEBUG] Cadastrando produto remotamente...');
-
-        await apiCall(`http://${baseUrl}/produto/cadastro`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            PRODUCT: localProduct,
-            PASSWORD: config.APIPassword,
-            USERCODE: 1,
-          }),
-        });
-        productRegistered = true;
-        // Define o produto remoto com estoque inicial zero após o cadastro bem-sucedido
-        remoteProduct = { ...localProduct, ESTOQUEATUAL: 0 };
-        console.log(
-          '[DEBUG] Produto cadastrado. remoteProduct definido como:',
-          remoteProduct,
-        );
-      }
-
-      // --- 4. ATUALIZAÇÃO DOS ESTOQUES (LOCAL E REMOTO) ---
-      const updatePayloadBase = {
-        BARCODE: requestData.code,
-        PASSWORD: config.APIPassword,
-        USERCODE: 1,
-      };
-
-      // Atualiza o estoque local (diminui a quantidade)
-      console.log(
-        `[DEBUG] Atualizando estoque local. localProduct.ESTOQUEATUAL = ${localProduct.ESTOQUEATUAL}`,
-      );
+      // --- 4. ATUALIZAÇÃO DO ESTOQUE LOCAL (SAÍDA) ---
       const newLocalStock = localProduct.ESTOQUEATUAL - requestData.amount;
       await apiCall(`http://${selfUrl}/update/produto`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...updatePayloadBase, QUANTITY: newLocalStock }),
-      });
-      console.log('[DEBUG] Estoque local atualizado.');
-
-      // Atualiza o estoque remoto (aumenta a quantidade)
-      console.log(
-        '[DEBUG] PONTO CRÍTICO: Verificando remoteProduct antes de atualizar estoque remoto:',
-        remoteProduct,
-      );
-      if (!remoteProduct) {
-        throw new Error(
-          '[ERRO FATAL] A variável remoteProduct está indefinida antes de atualizar o estoque remoto.',
-        );
-      }
-      console.log(
-        `[DEBUG] Atualizando estoque remoto. remoteProduct.ESTOQUEATUAL = ${remoteProduct.ESTOQUEATUAL}`,
-      );
-      const newRemoteStock = remoteProduct.ESTOQUEATUAL + requestData.amount;
-      await apiCall(`http://${baseUrl}/update/produto`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...updatePayloadBase,
-          QUANTITY: newRemoteStock,
+          BARCODE: requestData.code,
+          PASSWORD: config.APIPassword,
+          USERCODE: 1,
+          QUANTITY: newLocalStock,
         }),
       });
-      console.log('[DEBUG] Estoque remoto atualizado.');
 
       // --- 5. ENVIO DA RESPOSTA DE SUCESSO ---
-      const successMessage = productRegistered
-        ? `Produto '${requestData.name}' cadastrado e ${requestData.amount} unidade(s) transferida(s).`
-        : `${requestData.amount} unidade(s) do produto '${requestData.name}' transferida(s) com sucesso.`;
-
+      const successMessage = `${requestData.amount} unidade(s) do produto '${requestData.name}' transferida(s) com sucesso.`;
       await sendFinalResponse(baseUrl, 'Aceito', successMessage);
     } catch (error) {
       // --- TRATAMENTO DE ERROS ---
-      // Qualquer erro lançado no bloco 'try' será capturado aqui.
       console.error('[DEBUG] Falha na operação de envio:', error.message);
       await sendFinalResponse(baseUrl, 'Erro', error.message);
     } finally {
       // --- FINALIZAÇÃO ---
-      // Este bloco é executado sempre, tanto em caso de sucesso quanto de erro,
-      // garantindo que a interface seja fechada.
       onClose();
     }
   };
@@ -234,8 +159,7 @@ const RequestsModal = ({ isOpen, onClose, requestData, currentUser }) => {
   */
 
   const onReject = async () => {
-    // const baseUrl = config.endpoints[requestData.storeId];
-    const baseUrl = 'localhost:3000';
+    const baseUrl = config.endpoints[requestData.storeId];
 
     try {
       if (!baseUrl) {
