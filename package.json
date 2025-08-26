@@ -1,8 +1,9 @@
 {
   "homepage": ".",
   "name": "cesaria-app",
-  "private": true,
-  "version": "1.0.2",
+  "private": false,
+  "version": "1.2.1",
+  "description": "Cesaria App",
   "main": "electron-main.js",
   "type": "module",
   "scripts": {
@@ -12,7 +13,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "dist": "npm run build && electron-builder",
-    "publish": "electron-builder --publish always"
+    "publish": "npm run build && electron-builder --publish always"
   },
   "author": "LGBDS",
   "license": "ISC",
@@ -22,6 +23,7 @@
     "class-variance-authority": "^0.7.1",
     "electron-log": "^5.4.2",
     "electron-updater": "^6.6.2",
+    "express": "^5.1.0",
     "firebase": "^12.0.0",
     "lucide-react": "^0.525.0",
     "node-firebird": "^1.1.9",
@@ -76,21 +78,22 @@
       "perMachine": true,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "runAfterFinish": false,
+      "runAfterFinish": true,
       "deleteAppDataOnUninstall": true
     },
     "files": [
       "dist/**/*",
       "electron-main.js",
       "electron-preload.js",
-      "assets/**/*"
+      "assets/**/*",
+      "server.js"
     ],
     "publish": {
       "provider": "github",
       "owner": "guimerlin",
       "repo": "cesariaapp",
       "private": false,
-      "token": "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"
+      "releaseType": "release"
     }
   }
 }

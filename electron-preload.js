@@ -17,6 +17,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Carrega as configurações globais
   getConfig: () => ipcRenderer.invoke('get-config'),
 
+  fetchUrl: (url, options) => ipcRenderer.invoke('fetch-url', url, options),
+
   // Alertas urgentes
   triggerUrgentAlert: (alertText) =>
     ipcRenderer.invoke('trigger-urgent-alert', alertText),
@@ -26,18 +28,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Áudio
   getAudioData: (fileName) => ipcRenderer.invoke('get-audio-data', fileName),
 
-  // Consultas Firebird
-  queryFirebird: (config, searchTerm) =>
-    ipcRenderer.invoke('query-firebird', config, searchTerm),
-  queryTableFirebird: (config, tableName, fieldName, searchValue, limitDate) =>
-    ipcRenderer.invoke(
-      'query-table-firebird',
-      config,
-      tableName,
-      fieldName,
-      searchValue,
-      limitDate,
-    ),
+  // // Consultas Firebird
+  // queryFirebird: (config, searchTerm) =>
+  //   ipcRenderer.invoke('query-firebird', config, searchTerm),
+  // queryTableFirebird: (config, tableName, fieldName, searchValue, limitDate) =>
+  //   ipcRenderer.invoke(
+  //     'query-table-firebird',
+  //     config,
+  //     tableName,
+  //     fieldName,
+  //     searchValue,
+  //     limitDate,
+  //   ),
 
   // Janelas
   openStockWindow: () => ipcRenderer.invoke('open-stock-window'),
@@ -52,11 +54,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Navegação (para receber comandos do processo principal)
   onNavigateTo: (callback) => {
     ipcRenderer.on('navigate-to', (event, route) => callback(route));
-  },
-
-  // Listener para abrir o ConfigModal do Firebird via tray
-  onOpenFirebirdConfig: (callback) => {
-    ipcRenderer.on('onOpenFirebirdConfig', () => callback());
   },
 
   // Remove listeners

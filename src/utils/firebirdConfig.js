@@ -7,7 +7,7 @@
 const defaultFirebirdConfig = {
     host: "localhost",
     port: 3050,
-    database: "C:\\Cesaria\\CESARIA.FDB",
+    database: 'C:\\MAGNO SYSTEM\\PHARMAGNO\\SISGEMP.FDB',
     user: "SYSDBA",
     password: "masterkey",
     charset: "UTF8",

@@ -9,7 +9,19 @@ const UpdateModal = ({ show, status, onRestart, onLater }) => {
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm mx-auto">
         <h2 className="text-xl font-semibold mb-4 text-gray-800">Atualização de Software</h2>
-        {status === 'downloading' && <p className="text-gray-600">Baixando atualização...</p>}
+        {status === 'downloading' && (
+          <>
+            <p className="text-gray-600 mb-4">A atualização está sendo baixada em segundo plano.</p>
+            <div className="flex justify-end">
+              <button 
+                onClick={onLater}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Ok
+              </button>
+            </div>
+          </>
+        )}
         {(status === 'downloaded' || status === 'pending') && (
           <>
             <p className="text-gray-600 mb-4">Atualização pronta para instalar.</p>
