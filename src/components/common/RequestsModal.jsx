@@ -73,7 +73,7 @@ const RequestsModal = ({ isOpen, onClose, requestData, currentUser }) => {
     // const baseUrl = "localhost:3000";
     const selfUrl = config.endpoints[currentUser];
     const baseUrl = config.endpoints[requestData.storeId];
-
+    let transf1 = false;
 
     try {
       if (!selfUrl || !baseUrl) {
@@ -92,7 +92,8 @@ const RequestsModal = ({ isOpen, onClose, requestData, currentUser }) => {
       }
       const localProduct = localProductData[0];
 
-      if (localProduct.ESTOQUEATUAL < quantity) { // Usar a quantidade do estado
+      if (localProduct.ESTOQUEATUAL < quantity) {
+        // Usar a quantidade do estado
         throw new Error(
           'A quantidade solicitada é maior que o estoque disponível.',
         );
@@ -110,6 +111,8 @@ const RequestsModal = ({ isOpen, onClose, requestData, currentUser }) => {
         }),
       });
 
+      transf1 = true;
+
       // --- ATUALIZAÇÃO DO ESTOQUE LOCAL (SAÍDA) ---
       const newLocalStock = localProduct.ESTOQUEATUAL - quantity; // Usar a quantidade do estado
       await apiCall(`https://${selfUrl}/update/produto`, {
@@ -124,11 +127,22 @@ const RequestsModal = ({ isOpen, onClose, requestData, currentUser }) => {
       });
 
       // --- ENVIO DA RESPOSTA DE SUCESSO ---
-      const successMessage = `${quantity} unidade(s) do produto '${requestData.name}' transferida(s) com sucesso.`;
+      const successMessage = `${quantity} unidade(s) do produto '${requestData.name}' transferida(s) com sucesso. Ambos os estoques foram atualizados automaticamente, nenhum procedimento é necessário.`;
       await sendFinalResponse(baseUrl, 'Aceito', successMessage);
+      alert(successMessage);
+      alert(
+        'O produto foi automaticamente retirado do estoque local e Adicionado na loja de destino. Não é necessário alterações no estoque local. Apenas anote os dados da transferencia como Loja, produto e  quantidade caso necessário.',
+      );
     } catch (error) {
       console.error('[DEBUG] Falha na operação de envio:', error.message);
       await sendFinalResponse(baseUrl, 'Erro', error.message);
+      if (transf1) {
+        alert(
+          'Houve uma falha ao atualizar  o estoque local, mas o Produto foi adicionado ao estoque da Loja de destino. Envie uma foto da próxima caixa de Diálogo ao Suporte TI no Grupo da loja.',
+        );
+      }
+      alert('Houve uma falha ao relizar a transferência automaticamente. Confirme a transferência com a loja de destino e faça o procedimento manual. Após esta mensagem, envie uma foto do Erro para o Suporte TI no Grupo da loja.')
+      alert(error.message);
     } finally {
       onClose();
     }
@@ -160,9 +174,13 @@ const RequestsModal = ({ isOpen, onClose, requestData, currentUser }) => {
     <Dialog open={isOpen}>
       <DialogContent className="bg-white sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Solicitação de Produto</DialogTitle>
+          <DialogTitle>
+            <strong>{requestData?.storeId}</strong>
+          </DialogTitle>
           <DialogDescription>
-            Detalhes da solicitação de produto.
+            Solicitação de transferencia de produtos recebida da loja "
+            {requestData?.storeId}", confirme as informações e quantidade antes
+            de enviar.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -197,7 +215,7 @@ const RequestsModal = ({ isOpen, onClose, requestData, currentUser }) => {
             onClick={onSend}
             className="bg-green-500 text-white hover:bg-green-600"
           >
-            Enviar
+            Enviar para {requestData?.storeId}
           </Button>
         </DialogFooter>
       </DialogContent>

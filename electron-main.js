@@ -155,6 +155,7 @@ function createWindow() {
     titleBarStyle: 'default',
   });
 
+  
   if (!configFile.showDevMenu) {
     mainWindow.setMenu(null);
   }

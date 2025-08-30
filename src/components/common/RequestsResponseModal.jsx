@@ -29,7 +29,7 @@ const RequestsResponseModal = ({ isOpen, onClose, requestData, currentUser }) =>
             <strong>Nome do Produto:</strong> {requestData?.name}
           </p>
           <p>
-            <strong>Quantidade Solicitada:</strong> {requestData?.amount}
+            <strong>Quantidade enviada:</strong> {requestData?.amount}
           </p>
           <p>
             <strong>Status:</strong> {requestData?.status}
