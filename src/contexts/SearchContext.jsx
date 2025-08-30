@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import config from '../../config.json';
+import { useChat } from './ChatContext';
 
 const SearchContext = createContext(null);
 
 export const SearchContextProvider = ({ children }) => {
+  const { currentUser } = useChat();
   const [searchResults, setSearchResults] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
@@ -12,7 +14,6 @@ export const SearchContextProvider = ({ children }) => {
     targetStore,
     productInfo,
     quantidade,
-    currentUser,
   ) {
     console.log('[PRODUCT REQUEST] Enviando solicitação de produto:', {
       targetStore,

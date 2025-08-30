@@ -40,7 +40,7 @@ const SearchContent = () => {
   }, []);
 
   const handleQuantityConfirm = useCallback(async (product, quantity) => {
-    sendProductRequest(product.storeId, product, quantity, dbService, currentUser);
+    sendProductRequest(product.storeId, product, quantity);
     alert(
       `Solicitação de ${quantity} unidade(s) do produto "${product.PRODUTO}" enviada para ${product.storeId}.`,
     );

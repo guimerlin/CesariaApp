@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -8,10 +8,26 @@ import {
   DialogFooter,
 } from '../ui/dialog';
 import { Button } from '../ui/button';
+import { Input } from '../ui/input';
 import config from '../../../config.json';
 
 const RequestsModal = ({ isOpen, onClose, requestData, currentUser }) => {
+  const [quantity, setQuantity] = useState(requestData?.amount || 1);
+
+  useEffect(() => {
+    if (requestData) {
+      setQuantity(requestData.amount);
+    }
+  }, [requestData]);
+
   if (!isOpen) return null;
+
+  const handleQuantityChange = (e) => {
+    const value = parseInt(e.target.value, 10);
+    if (!isNaN(value) && value > 0) {
+      setQuantity(value);
+    }
+  };
 
   const apiCall = async (url, options) => {
     const response = await window.electronAPI.fetchUrl(url, options);
@@ -25,17 +41,16 @@ const RequestsModal = ({ isOpen, onClose, requestData, currentUser }) => {
   };
 
   const sendFinalResponse = async (baseUrl, status, message) => {
-    // Evita tentar enviar uma resposta se a URL não estiver disponível
     if (!baseUrl) return;
 
-    const responseUrl = `http://${baseUrl}/request/response`;
+    const responseUrl = `https://${baseUrl}/request/response`;
     const responseOptions = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         code: requestData.code,
         name: requestData.name,
-        amount: requestData.amount,
+        amount: quantity, // Usar a quantidade do estado
         storeId: currentUser,
         password: config.APIPassword,
         status: status,
@@ -54,21 +69,21 @@ const RequestsModal = ({ isOpen, onClose, requestData, currentUser }) => {
   };
 
   const onSend = async () => {
-    // const selfUrl = config.endpoints[currentUser];
-    // const baseUrl = config.endpoints[requestData.storeId];
-    const selfUrl = "localhost:3000";
-    const baseUrl = "localhost:3000"
+    // const selfUrl = "localhost:3000";
+    // const baseUrl = "localhost:3000";
+    const selfUrl = config.endpoints[currentUser];
+    const baseUrl = config.endpoints[requestData.storeId];
+
 
     try {
-
       if (!selfUrl || !baseUrl) {
         throw new Error(
-          'Endpoints de comunicação não configurados. A operação não pode continuar.',
+          `Endpoints de comunicação não configurados. A operação não pode continuar: SelfUrl: ${selfUrl}, BaseUrl: ${baseUrl}, currentUser: ${currentUser}, requestData.storeId: ${requestData.storeId}`,
         );
       }
 
       const localProductData = await apiCall(
-        `http://${selfUrl}/produto/info/${requestData.code}`,
+        `https://${selfUrl}/produto/info/${requestData.code}`,
         { method: 'GET' },
       );
 
@@ -77,27 +92,27 @@ const RequestsModal = ({ isOpen, onClose, requestData, currentUser }) => {
       }
       const localProduct = localProductData[0];
 
-      if (localProduct.ESTOQUEATUAL < requestData.amount) {
+      if (localProduct.ESTOQUEATUAL < quantity) { // Usar a quantidade do estado
         throw new Error(
           'A quantidade solicitada é maior que o estoque disponível.',
         );
       }
 
       // --- TRANSFERÊNCIA REMOTA ---
-      await apiCall(`http://${baseUrl}/transfer`, {
+      await apiCall(`https://${baseUrl}/transfer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           product: localProduct,
-          amount: requestData.amount,
+          amount: quantity, // Usar a quantidade do estado
           storeId: currentUser,
           password: config.APIPassword,
         }),
       });
 
       // --- ATUALIZAÇÃO DO ESTOQUE LOCAL (SAÍDA) ---
-      const newLocalStock = localProduct.ESTOQUEATUAL - requestData.amount;
-      await apiCall(`http://${selfUrl}/update/produto`, {
+      const newLocalStock = localProduct.ESTOQUEATUAL - quantity; // Usar a quantidade do estado
+      await apiCall(`https://${selfUrl}/update/produto`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -109,21 +124,15 @@ const RequestsModal = ({ isOpen, onClose, requestData, currentUser }) => {
       });
 
       // --- ENVIO DA RESPOSTA DE SUCESSO ---
-      const successMessage = `${requestData.amount} unidade(s) do produto '${requestData.name}' transferida(s) com sucesso.`;
+      const successMessage = `${quantity} unidade(s) do produto '${requestData.name}' transferida(s) com sucesso.`;
       await sendFinalResponse(baseUrl, 'Aceito', successMessage);
     } catch (error) {
-      // --- TRATAMENTO DE ERROS ---
       console.error('[DEBUG] Falha na operação de envio:', error.message);
       await sendFinalResponse(baseUrl, 'Erro', error.message);
     } finally {
-      // --- FINALIZAÇÃO ---
       onClose();
     }
   };
-
-  /*
-  ENVIA RESPOSTA DE REJEICAO PARA A LOJA QUE SOLICITOU O PRODUTO
-  */
 
   const onReject = async () => {
     const baseUrl = config.endpoints[requestData.storeId];
@@ -163,9 +172,18 @@ const RequestsModal = ({ isOpen, onClose, requestData, currentUser }) => {
           <p>
             <strong>Nome do Produto:</strong> {requestData?.name}
           </p>
-          <p>
-            <strong>Quantidade:</strong> {requestData?.amount}
-          </p>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <label htmlFor="quantity" className="text-right">
+              <strong>Quantidade:</strong>
+            </label>
+            <Input
+              id="quantity"
+              type="number"
+              value={quantity}
+              onChange={handleQuantityChange}
+              className="col-span-3"
+            />
+          </div>
         </div>
         <DialogFooter>
           <Button

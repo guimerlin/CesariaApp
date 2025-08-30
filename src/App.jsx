@@ -45,8 +45,10 @@ const AppContent = () => {
   // State for RequestsModal
   const [isRequestsModalOpen, setIsRequestsModalOpen] = useState(false);
   const [requestsModalData, setRequestsModalData] = useState(null);
-  const [isRequestsResponseModalOpen, setIsRequestsResponseModalOpen] = useState(false);
-  const [requestsResponseModalData, setRequestsResponseModalData] = useState(null);
+  const [isRequestsResponseModalOpen, setIsRequestsResponseModalOpen] =
+    useState(false);
+  const [requestsResponseModalData, setRequestsResponseModalData] =
+    useState(null);
 
   useEffect(() => {
     // Envia o evento para o processo principal assim que o app estiver pronto
@@ -74,7 +76,7 @@ const AppContent = () => {
       setIsRequestsModalOpen(true);
       triggerUrgentAlert('Nova solicitação de produto recebida!');
     };
-    
+
     const handleOpenRequestResponseModal = (event, data) => {
       console.log('[DEBUG] Evento IPC Response recebido:', event); // NOVO LOG
       setRequestsResponseModalData(event);
@@ -86,14 +88,32 @@ const AppContent = () => {
     window.electron.ipcRenderer.on('update-available', handleUpdateAvailable);
     window.electron.ipcRenderer.on('update-downloaded', handleUpdateDownloaded);
     window.electron.ipcRenderer.on('update-pending', handleUpdatePending);
-    window.electron.ipcRenderer.on('open-request-modal', handleOpenRequestModal); // New listener
-    window.electron.ipcRenderer.on('open-request-response-modal', handleOpenRequestResponseModal); // New listener
-    
+    window.electron.ipcRenderer.on(
+      'open-request-modal',
+      handleOpenRequestModal,
+    ); // New listener
+    window.electron.ipcRenderer.on(
+      'open-request-response-modal',
+      handleOpenRequestResponseModal,
+    ); // New listener
+
     return () => {
-      window.electron.ipcRenderer.removeListener('update-available', handleUpdateAvailable);
-      window.electron.ipcRenderer.removeListener('update-downloaded', handleUpdateDownloaded);
-      window.electron.ipcRenderer.removeListener('update-pending', handleUpdatePending);
-      window.electron.ipcRenderer.removeListener('open-request-modal', handleOpenRequestModal); // Cleanup new listener
+      window.electron.ipcRenderer.removeListener(
+        'update-available',
+        handleUpdateAvailable,
+      );
+      window.electron.ipcRenderer.removeListener(
+        'update-downloaded',
+        handleUpdateDownloaded,
+      );
+      window.electron.ipcRenderer.removeListener(
+        'update-pending',
+        handleUpdatePending,
+      );
+      window.electron.ipcRenderer.removeListener(
+        'open-request-modal',
+        handleOpenRequestModal,
+      ); // Cleanup new listener
     };
   }, []);
 
@@ -278,14 +298,12 @@ const AppContent = () => {
         onClose={handleCloseRequestsModal}
         requestData={requestsModalData}
         currentUser={currentUser}
-        
       />
       <RequestsResponseModal
         isOpen={isRequestsResponseModalOpen}
         onClose={handleCloseRequestsResponseModal}
         requestData={requestsResponseModalData}
         currentUser={currentUser}
-        
       />
     </div>
   );
