@@ -10,7 +10,7 @@ import ResultsTable from '../components/stock/ResultsTable';
 import QuantityModal from '../components/stock/QuantityModal';
 
 const SearchContent = () => {
-  const { currentUser, dbService } = useChat();
+  // const { currentUser } = useChat();
   const {
     searchResults,
     isLoading,
