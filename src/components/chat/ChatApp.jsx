@@ -1,5 +1,5 @@
 "use client"
-import { useFirestore } from "../../contexts/FirestoreContext"
+import { useAuth } from "../../contexts/AuthContext"
 import LoginForm from "./LoginForm"
 import ChatList from "./ChatList"
 import ChatWindow from "./ChatWindow"
@@ -7,7 +7,7 @@ import NotificationSystem from "./NotificationSystem"
 import { Button } from "./ui/button"
 
 const ChatApp = () => {
-  const { user, loading, logout } = useFirestore()
+  const { user, loading, logout } = useAuth()
 
   if (loading) {
     return (

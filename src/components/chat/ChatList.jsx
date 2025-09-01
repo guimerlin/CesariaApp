@@ -1,6 +1,9 @@
 "use client"
 import { useState } from "react"
-import { useFirestore } from "../../contexts/FirestoreContext"
+import { useAuth } from "../../contexts/AuthContext"
+import { useUser } from "../../contexts/UserContext"
+import { useChat } from "../../contexts/ChatContext"
+import { useNotification } from "../../contexts/NotificationContext"
 import { Card } from "./ui/card"
 import { Badge } from "./ui/badge"
 import { Button } from "./ui/button"
@@ -8,18 +11,16 @@ import { Input } from "./ui/input"
 import { MessageCircle, Users, Search, User } from "lucide-react"
 
 const ChatList = () => {
-  const { chats, activeChat, setActiveChat, messages, user, allUsers, createPrivateChat } = useFirestore()
+  const { user } = useAuth()
+  const { allUsers } = useUser()
+  const { chats, messages, activeChat, setActiveChat, createPrivateChat } = useChat()
+  const { unreadCounts } = useNotification()
   const [searchTerm, setSearchTerm] = useState("")
   const [showUsers, setShowUsers] = useState(false)
 
   const getLastMessage = (chatId) => {
     const chatMessages = messages[chatId] || []
     return chatMessages[chatMessages.length - 1]
-  }
-
-  const getUnreadCount = (chatId) => {
-    const chatMessages = messages[chatId] || []
-    return chatMessages.filter((msg) => msg.senderId !== user?.uid && !msg.read).length
   }
 
   const formatTime = (timestamp) => {
@@ -38,16 +39,6 @@ const ChatList = () => {
       u.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       u.email?.toLowerCase().includes(searchTerm.toLowerCase()),
   )
-
-  console.log("[v0] Total de usuários carregados:", allUsers.length)
-  console.log("[v0] Usuários filtrados:", filteredUsers.length)
-  console.log("[v0] Usuário atual:", user?.uid)
-  console.log(
-    "[v0] Lista completa de usuários:",
-    allUsers.map((u) => ({ id: u.id, name: u.name, email: u.email })),
-  )
-  console.log("[v0] ShowUsers:", showUsers)
-  console.log("[v0] SearchTerm:", searchTerm)
 
   const handleStartChat = async (targetUser) => {
     await createPrivateChat(targetUser.id)
@@ -98,7 +89,7 @@ const ChatList = () => {
           <>
             {filteredChats.map((chat) => {
               const lastMessage = getLastMessage(chat.id)
-              const unreadCount = getUnreadCount(chat.id)
+              const unreadCount = unreadCounts[chat.id] || 0
               const isActive = activeChat === chat.id
 
               return (
