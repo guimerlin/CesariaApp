@@ -1,4 +1,3 @@
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////// COMPORTAMENTO DA JANELA DO APP E FUNÇÕES EXPOSTAS DE USO EXTERNO /////////////////
 
 ////////// IMPORTAÇÕES
@@ -111,12 +110,10 @@ loadConfig();
 
 function STARTAPI() {
   if (!configFile.useAPI) return;
-  APIStart(3000, mainWindow);
+  APIStart(3000, mainWindow, { startSoundAlert, stopSoundAlert });
 }
 
-
-
-/////////////////////////////////////
+////////////////////////////////////
 
 ////////// BLOQUEIO DE INSTANCIA UNICA
 
@@ -155,7 +152,6 @@ function createWindow() {
     titleBarStyle: 'default',
   });
 
-  
   if (!configFile.showDevMenu) {
     mainWindow.setMenu(null);
   }
@@ -340,6 +336,24 @@ function bringToFront() {
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////// FUNÇÕES DE ALERTA SONORO /////////////////////////////////////////
+
+function startSoundAlert() {
+  console.log('[ELECTRON] Alerta sonoro iniciado.');
+  bringToFront();
+  if (mainWindow) {
+    mainWindow.webContents.send('play-audio-loop');
+  }
+}
+
+function stopSoundAlert() {
+  console.log('[ELECTRON] Alerta sonoro parado.');
+  if (mainWindow) {
+    mainWindow.webContents.send('stop-audio-loop');
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -510,6 +524,18 @@ ipcMain.handle('system-beep', async () => {
   return { success: true };
 });
 
+// DISPARA O ALERTA SONORO
+ipcMain.handle('start-sound-alert', async () => {
+  startSoundAlert();
+  return { success: true };
+});
+
+// PARA O ALERTA SONORO
+ipcMain.handle('stop-sound-alert', async () => {
+  stopSoundAlert();
+  return { success: true };
+});
+
 ////////////////////////////////////////////////////////////////////////////////
 
 // CARREGA O AUDIO DE NOTIFICAÇÃO
@@ -660,7 +686,7 @@ ipcMain.handle('get-audio-data', async (event, fileName) => {
 //   CASE WHEN sc.SOMAVALOR < 0 THEN 0 ELSE sc.SOMAMULTA END AS MULTA,
 //   CASE WHEN sc.SOMAVALOR <= 0 THEN c.LIMITEDECOMPRA - (sc.SOMAMULTA + sc.SOMAVALOR) ELSE c.LIMITEDECOMPRA - sc.SOMAVALOR END AS DISPONIVEL
 // FROM PARCELADECOMPRA pc
-// LEFT JOIN CLIENTES c ON pc.CODIGOCLIENTE = c.CODIGO
+// LEFT JOIN CLIENTES c ON pc.CODIGOCLiente = c.CODIGO
 // LEFT JOIN (
 //     SELECT
 //         pc2.CODIGOCLIENTE,
@@ -857,3 +883,4 @@ process.on('unhandledRejection', (reason) => {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////
+('');

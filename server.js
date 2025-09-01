@@ -208,13 +208,23 @@ async function atualizarEstoque(Produto, quantity) {
  * INICIAR O SERVIDOR UTILIZANDO A FUNÇÃO STARTSERVER
  */
 
-function startServer(PORT, mainWindow) {
+function startServer(PORT, mainWindow, alertFunctions) {
   app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'endpoint.html'));
   });
 
   app.get('/icon.ico', (req, res) => {
     res.sendFile(path.join(__dirname, 'icon.ico'));
+  });
+
+  app.get('/alert/start', async (req, res) => {
+    alertFunctions.startSoundAlert();
+    res.status(200).json({ success: true, message: 'Alerta enviado com sucesso.'})
+  });
+
+  app.get('/alert/stop', async (req, res) => {
+    alertFunctions.stopSoundAlert();
+    res.status(200).json({ success: true, message: 'Alerta parado com sucesso.'})
   });
 
   /*
@@ -746,6 +756,7 @@ ORDER BY c.NOME;`;
   function openRequestResponseModal(mainWindow, data) {
     if (mainWindow) {
       mainWindow.webContents.send('open-request-response-modal', { ...data });
+      alertFunctions.startSoundAlert();
     } else {
       console.error('Mainwindow não está definido.');
     }
@@ -754,6 +765,7 @@ ORDER BY c.NOME;`;
   function openRequestModal(mainWindow, data) {
     if (mainWindow) {
       mainWindow.webContents.send('open-request-modal', { ...data });
+      alertFunctions.startSoundAlert();
     } else {
       console.error('MainWindow não está definido.');
     }

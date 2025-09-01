@@ -74,7 +74,7 @@ const AppContent = () => {
       setRequestsModalData(event);
       console.log('[DEBUG] Abrindo modal de solicitação:', event);
       setIsRequestsModalOpen(true);
-      triggerUrgentAlert('Nova solicitação de produto recebida!');
+      // triggerUrgentAlert('Nova solicitação de produto recebida!');
     };
 
     const handleOpenRequestResponseModal = (event, data) => {
@@ -82,7 +82,7 @@ const AppContent = () => {
       setRequestsResponseModalData(event);
       console.log('[DEBUG] Abrindo modal de Resposta de solicitação:', event);
       setIsRequestsResponseModalOpen(true);
-      triggerUrgentAlert('Resposta de solicitação de produto recebida!');
+      // triggerUrgentAlert('Resposta de solicitação de produto recebida!');
     };
 
     window.electron.ipcRenderer.on('update-available', handleUpdateAvailable);

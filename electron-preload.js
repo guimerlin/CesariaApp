@@ -2,6 +2,19 @@
 
 const { contextBridge, ipcRenderer } = require('electron');
 
+const notifyAudio = new Audio('notify.wav'); // Carrega o áudio
+
+// Ouve os comandos de áudio do processo principal (main)
+ipcRenderer.on('play-audio-loop', () => {
+  notifyAudio.loop = true;
+  notifyAudio.play().catch((e) => console.error('Audio play failed:', e));
+});
+
+ipcRenderer.on('stop-audio-loop', () => {
+  notifyAudio.pause();
+  notifyAudio.currentTime = 0;
+});
+
 // Expõe APIs do Electron para o renderer process de forma segura
 contextBridge.exposeInMainWorld('electron', {
   ipcRenderer: {
@@ -24,9 +37,22 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('trigger-urgent-alert', alertText),
   stopShaking: () => ipcRenderer.invoke('stop-shaking'),
   systemBeep: () => ipcRenderer.invoke('system-beep'),
+  startSoundAlert: () => ipcRenderer.invoke('start-sound-alert'),
+  stopSoundAlert: () => ipcRenderer.invoke('stop-sound-alert'),
 
   // Áudio
   getAudioData: (fileName) => ipcRenderer.invoke('get-audio-data', fileName),
+
+  // Funções de controle de áudio direto (se necessário)
+  playAudioLoop: () => {
+    notifyAudio.loop = true;
+    notifyAudio.play();
+  },
+
+  stopAudioLoop: () => {
+    notifyAudio.pause();
+    notifyAudio.currentTime = 0;
+  },
 
   // // Consultas Firebird
   // queryFirebird: (config, searchTerm) =>

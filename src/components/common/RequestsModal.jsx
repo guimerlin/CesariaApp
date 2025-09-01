@@ -141,10 +141,13 @@ const RequestsModal = ({ isOpen, onClose, requestData, currentUser }) => {
           'Houve uma falha ao atualizar  o estoque local, mas o Produto foi adicionado ao estoque da Loja de destino. Envie uma foto da próxima caixa de Diálogo ao Suporte TI no Grupo da loja.',
         );
       }
-      alert('Houve uma falha ao relizar a transferência automaticamente. Confirme a transferência com a loja de destino e faça o procedimento manual. Após esta mensagem, envie uma foto do Erro para o Suporte TI no Grupo da loja.')
+      alert(
+        'Houve uma falha ao relizar a transferência automaticamente. Confirme a transferência com a loja de destino e faça o procedimento manual. Após esta mensagem, envie uma foto do Erro para o Suporte TI no Grupo da loja.',
+      );
       alert(error.message);
     } finally {
       onClose();
+      await apiCall('http://localhost:3000/alert/stop', { method: 'GET' });
     }
   };
 
@@ -167,6 +170,7 @@ const RequestsModal = ({ isOpen, onClose, requestData, currentUser }) => {
       console.error(`[DEBUG] Falha ao rejeitar solicitação: ${error.message}`);
     } finally {
       onClose();
+      await apiCall('http://localhost:3000/alert/stop', { method: 'GET' });
     }
   };
 
