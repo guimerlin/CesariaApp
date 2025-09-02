@@ -1,20 +1,20 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { useFirestore } from "../../contexts/FirestoreContext"
+import { useNotification } from "../../contexts/NotificationContext"
 import { Card } from "./ui/card"
 import { Button } from "./ui/button"
 
 const NotificationSystem = () => {
-  const { notifications, removeNotification } = useFirestore()
+  const { inAppNotifications, removeInAppNotification } = useNotification()
   const timeoutsRef = useRef(new Map())
 
   useEffect(() => {
-    notifications.forEach((notification) => {
+    inAppNotifications.forEach((notification) => {
       // Se já existe um timeout para esta notificação, não criar outro
       if (!timeoutsRef.current.has(notification.id)) {
         const timeoutId = setTimeout(() => {
-          removeNotification(notification.id)
+          removeInAppNotification(notification.id)
           timeoutsRef.current.delete(notification.id)
         }, 5000)
 
@@ -23,7 +23,7 @@ const NotificationSystem = () => {
     })
 
     // Limpar timeouts de notificações que foram removidas manualmente
-    const currentNotificationIds = new Set(notifications.map((n) => n.id))
+    const currentNotificationIds = new Set(inAppNotifications.map((n) => n.id))
     for (const [notificationId, timeoutId] of timeoutsRef.current.entries()) {
       if (!currentNotificationIds.has(notificationId)) {
         clearTimeout(timeoutId)
@@ -36,13 +36,13 @@ const NotificationSystem = () => {
       timeoutsRef.current.forEach((timeoutId) => clearTimeout(timeoutId))
       timeoutsRef.current.clear()
     }
-  }, [notifications, removeNotification])
+  }, [inAppNotifications, removeInAppNotification])
 
-  if (notifications.length === 0) return null
+  if (inAppNotifications.length === 0) return null
 
   return (
     <div className="fixed top-4 right-4 z-50 space-y-2 max-w-sm">
-      {notifications.map((notification) => (
+      {inAppNotifications.map((notification) => (
         <Card
           key={notification.id}
           className="p-4 bg-secondary text-secondary-foreground shadow-lg animate-in slide-in-from-right"
@@ -60,7 +60,7 @@ const NotificationSystem = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => removeNotification(notification.id)}
+              onClick={() => removeInAppNotification(notification.id)}
               className="ml-2 h-6 w-6 p-0"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -1,26 +1,31 @@
 "use client"
 
 import { useState } from "react"
-import { useFirestore } from "../../contexts/FirestoreContext"
+import { useChat } from "../../contexts/ChatContext"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
+import { Send, AlertTriangle, Loader2 } from "lucide-react"
 
 const MessageInput = () => {
   const [message, setMessage] = useState("")
   const [sending, setSending] = useState(false)
-  const { activeChat, sendMessage } = useFirestore()
+  const { activeChat, sendMessage } = useChat()
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const handleSend = async (isUrgent = false) => {
     if (!message.trim() || !activeChat || sending) return
 
     setSending(true)
-    const result = await sendMessage(activeChat, message)
+    const result = await sendMessage(activeChat, message, isUrgent)
 
     if (result.success) {
       setMessage("")
     }
     setSending(false)
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    await handleSend(false)
   }
 
   const handleKeyPress = (e) => {
@@ -38,24 +43,20 @@ const MessageInput = () => {
           onChange={(e) => setMessage(e.target.value)}
           onKeyPress={handleKeyPress}
           placeholder="Digite sua mensagem..."
-          disabled={sending}
+          disabled={!activeChat || sending}
           className="flex-1"
         />
-        <Button type="submit" disabled={!message.trim() || sending} className="px-6">
-          {sending ? (
-            <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-              />
-            </svg>
-          ) : (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-            </svg>
-          )}
+        <Button type="submit" disabled={!message.trim() || sending} className="px-4">
+          {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+        </Button>
+        <Button
+          type="button"
+          variant="destructive"
+          onClick={() => handleSend(true)}
+          disabled={!message.trim() || sending}
+          className="px-4"
+        >
+          {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertTriangle className="w-4 h-4" />}
         </Button>
       </form>
     </div>

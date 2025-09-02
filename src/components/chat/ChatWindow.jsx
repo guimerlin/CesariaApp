@@ -1,12 +1,16 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { useFirestore } from "../../contexts/FirestoreContext"
+import { useAuth } from "../../contexts/AuthContext"
+import { useChat } from "../../contexts/ChatContext"
+import { useUser } from "../../contexts/UserContext"
 import MessageInput from "./MessageInput"
 import { Card } from "./ui/card"
 
 const ChatWindow = () => {
-  const { activeChat, messages, user, getChatName } = useFirestore()
+  const { user } = useAuth()
+  const { activeChat, messages, getChatName } = useChat()
+  const { allUsers } = useUser()
   const messagesEndRef = useRef(null)
 
   const scrollToBottom = () => {

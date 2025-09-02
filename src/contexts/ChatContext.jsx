@@ -22,6 +22,7 @@ import {
 } from "firebase/firestore"
 import { db } from "../utils/firebase"
 import { useAuth } from "./AuthContext"
+import { useUser } from "./UserContext"
 
 const ChatContext = createContext()
 
@@ -35,6 +36,7 @@ export const useChat = () => {
 
 export const ChatProvider = ({ children }) => {
   const { user } = useAuth()
+  const { allUsers } = useUser()
   const [chats, setChats] = useState([])
   const [messages, setMessages] = useState({})
   const [activeChat, setActiveChat] = useState(null)
@@ -172,13 +174,18 @@ export const ChatProvider = ({ children }) => {
 
   const getChatName = (chatId) => {
     const chat = chats.find((c) => c.id === chatId)
-    if (chat?.type === 'private' && user) {
-        const otherParticipantId = chat.participants.find(p => p !== user.uid);
-        // This part needs access to allUsers, which will be in UserContext.
-        // For now, returning a placeholder. This highlights the need for context composition.
-        return chat.name || "Chat Privado"
+    if (!chat) return "Chat"
+
+    if (chat.isGeneral) return "Chat Geral"
+
+    if (chat.type === "private" && user && allUsers.length > 0) {
+      const otherParticipantId = chat.participants.find((p) => p !== user.uid)
+      if (otherParticipantId) {
+        const otherUser = allUsers.find((u) => u.id === otherParticipantId)
+        return otherUser?.name || otherUser?.email || "Usuário"
+      }
     }
-    return chat?.name || "Chat"
+    return chat.name || "Chat"
   }
 
   const value = {
