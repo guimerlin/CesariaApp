@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useFirestore } from "../../contexts/FirestoreContext"
+import { useAuth } from "../../contexts/AuthContext"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
@@ -14,7 +14,7 @@ const LoginForm = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
-  const { login, register } = useFirestore()
+  const { login, register } = useAuth()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
