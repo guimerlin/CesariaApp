@@ -42,7 +42,7 @@ const SearchContent = () => {
   const handleQuantityConfirm = useCallback(async (product, quantity) => {
     sendProductRequest(product.storeId, product, quantity);
     alert(
-      `Solicitação de ${quantity} unidade(s) do produto "${product.PRODUTO}" enviada para ${product.storeId}.`,
+      `Solicitação de "${product.PRODUTO}" enviada para ${product.storeId}. Aguarde uma resposta para saber se o produto foi transferido com sucesso.`,
     );
   }, []);
 

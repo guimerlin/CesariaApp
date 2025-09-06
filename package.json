@@ -2,8 +2,8 @@
   "homepage": ".",
   "name": "cesaria-app",
   "private": false,
-  "version": "1.2.3",
-  "description": "Cesaria App",
+  "version": "1.2.4",
+  "description": "Integração Web-Pharmagno",
   "main": "electron-main.js",
   "type": "module",
   "scripts": {
@@ -15,7 +15,7 @@
     "dist": "npm run build && electron-builder",
     "publish": "npm run build && electron-builder --publish always"
   },
-  "author": "LGBDS",
+  "author": "Luiz Guilherme Braga",
   "license": "ISC",
   "dependencies": {
     "@tailwindcss/vite": "^4.1.11",

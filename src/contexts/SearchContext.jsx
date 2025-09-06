@@ -135,7 +135,7 @@ export const SearchContextProvider = ({ children }) => {
     });
 
     setSearchResults(newResults);
-    setStatusMessage(`${totalResults} resultado(s) encontrado(s).`);
+    setStatusMessage(`${totalResults} produto(s) encontrado(s).`);
     setIsLoading(false);
     console.log('Busca finalizada.', { newResults, totalResults });
   }, []);
