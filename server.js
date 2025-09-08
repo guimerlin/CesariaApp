@@ -756,7 +756,6 @@ ORDER BY c.NOME;`;
   function openRequestResponseModal(mainWindow, data) {
     if (mainWindow) {
       mainWindow.webContents.send('open-request-response-modal', { ...data });
-      alertFunctions.startSoundAlert();
     } else {
       console.error('Mainwindow não está definido.');
     }

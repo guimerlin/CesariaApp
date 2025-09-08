@@ -90,12 +90,20 @@ const RequestsModal = ({ isOpen, onClose, requestData, currentUser }) => {
       if (!localProductData || localProductData.length === 0) {
         throw new Error('Produto não encontrado no estoque local.');
       }
-      const localProduct = localProductData[0];
+      let localProduct = localProductData[0];
+
+      if (
+        localProduct &&
+        localProduct.CODIGO.endsWith('**') &&
+        localProductData[1]
+      ) {
+        localProduct = localProductData[1];
+      }
 
       if (localProduct.ESTOQUEATUAL < quantity) {
         // Usar a quantidade do estado
         throw new Error(
-          'A quantidade solicitada é maior que o estoque disponível.',
+          `A quantidade solicitada é maior que o estoque disponível. Estoque Atual:${localProduct.ESTOQUEATUAL}, Quantidade: ${quantity}`,
         );
       }
 

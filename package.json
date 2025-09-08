@@ -2,7 +2,7 @@
   "homepage": ".",
   "name": "cesaria-app",
   "private": false,
-  "version": "1.2.4",
+  "version": "1.2.6",
   "description": "Integração Web-Pharmagno",
   "main": "electron-main.js",
   "type": "module",
