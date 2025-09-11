@@ -5,7 +5,7 @@ import { useChat } from './ChatContext';
 const SearchContext = createContext(null);
 
 export const SearchContextProvider = ({ children }) => {
-  const { currentUser } = useChat();
+  const { currentUser, sendMessageChat } = useChat();
   const [searchResults, setSearchResults] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
@@ -38,6 +38,7 @@ export const SearchContextProvider = ({ children }) => {
       password: config.APIPassword,
     };
 
+    const chatId = [currentUser, targetStore].sort().join('_');
     const fetchUrl = `https://${url}/request`;
     const options = {
       method: 'POST',
@@ -51,6 +52,11 @@ export const SearchContextProvider = ({ children }) => {
       console.log(`[PRODUCT REQUEST] Enviando requisição para: ${fetchUrl}`);
       const result = await window.electronAPI.fetchUrl(fetchUrl, options);
       console.log('[PRODUCT REQUEST] Resultado da requisição:', result);
+      await sendMessageChat(
+        `Solicitação de produto enviada de ${currentUser} para ${targetStore}. Pedido do produto ${productInfo.PRODUTO}, com o Código ${productInfo.CODIGO}. Quantidade: ${quantidade}`,
+        false,
+        chatId,
+      )
 
       if (!result.success) {
         throw new Error(

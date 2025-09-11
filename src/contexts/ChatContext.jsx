@@ -177,222 +177,6 @@ export const ChatProvider = ({ children }) => {
     );
   };
 
-  // Listeners para requisições de estoque e tabela (mantidos para compatibilidade com Electron)
-  // const listenForStockRequests = (username) => {
-  //   onValue(
-  //     ref(firebaseDb, `${basePath}/stockRequests/${username}`),
-  //     (snapshot) => {
-  //       if (!snapshot.exists()) return;
-
-  //       snapshot.forEach((childSnapshot) => {
-  //         const requestId = childSnapshot.key;
-  //         const requestData = childSnapshot.val();
-  //         console.log(
-  //           `[DEBUG] Recebida requisição de estoque [${requestId}] de ${requestData.requesterId}`,
-  //         );
-
-  //         handleStockRequest(requestId, requestData, username);
-  //         remove(childSnapshot.ref);
-  //       });
-  //     },
-  //   );
-  // };
-
-  // const listenForTableRequests = (username) => {
-  //   onValue(
-  //     ref(firebaseDb, `${basePath}/tableRequests/${username}`),
-  //     (snapshot) => {
-  //       if (!snapshot.exists()) return;
-
-  //       snapshot.forEach((childSnapshot) => {
-  //         const requestId = childSnapshot.key;
-  //         const requestData = childSnapshot.val();
-  //         console.log(
-  //           `[DEBUG] Recebida requisição de tabela [${requestId}] de ${requestData.requesterId}`,
-  //         );
-
-  //         handleTableRequest(requestId, requestData, username);
-  //         remove(childSnapshot.ref);
-  //       });
-  //     },
-  //   );
-  // };
-
-  // Handlers para requisições (mantidos para compatibilidade com Electron)
-  // const handleStockRequest = async (requestId, requestData, currentUser) => {
-  //   try {
-  //     const firebirdConfig = getFirebirdConfig();
-
-  //     if (window.electronAPI?.queryFirebird) {
-  //       const result = await window.electronAPI.queryFirebird(
-  //         firebirdConfig,
-  //         requestData.searchTerm,
-  //       );
-
-  //       const answerPayload = {
-  //         requestId: requestId,
-  //         storeId: currentUser,
-  //         results: result.success ? result.data : null,
-  //         error: result.success ? null : result.error,
-  //         timestamp: Date.now(),
-  //       };
-
-  //       const answerRef = ref(
-  //         firebaseDb,
-  //         `${basePath}/stockRequestAnswers/${requestData.requesterId}/${requestId}`,
-  //       );
-  //       await set(answerRef, answerPayload);
-  //       console.log(
-  //         `[DEBUG] Resposta para [${requestId}] enviada para ${requestData.requesterId}`,
-  //       );
-  //     } else {
-  //       console.warn(
-  //         '[DEBUG] API do Electron não disponível para consulta Firebird',
-  //       );
-  //     }
-  //   } catch (error) {
-  //     console.error(
-  //       `[DEBUG] Erro ao processar requisição de estoque [${requestId}]:`,
-  //       error,
-  //     );
-  //   }
-  // };
-
-  // const handleTableRequest = async (requestId, requestData, currentUser) => {
-  //   try {
-  //     const firebirdConfig = getFirebirdConfig();
-
-  //     if (window.electronAPI?.queryTableFirebird) {
-  //       const result = await window.electronAPI.queryTableFirebird(
-  //         firebirdConfig,
-  //         requestData.tableName,
-  //         requestData.fieldName,
-  //         requestData.searchValue,
-  //         requestData.limitDate,
-  //       );
-
-  //       const answerPayload = {
-  //         requestId: requestId,
-  //         storeId: currentUser,
-  //         results: result.success ? result.data : [],
-  //         error: result.success ? null : result.error,
-  //         timestamp: Date.now(),
-  //       };
-
-  //       const answerRef = ref(
-  //         firebaseDb,
-  //         `${basePath}/tableRequestAnswers/${requestData.requesterId}/${requestId}`,
-  //       );
-  //       await set(answerRef, answerPayload);
-  //       console.log('[DEBUG] Resposta de tabela enviada:', answerPayload);
-  //     } else {
-  //       console.warn(
-  //         '[DEBUG] API do Electron não disponível para consulta de tabela',
-  //       );
-  //     }
-  //   } catch (error) {
-  //     console.error('[DEBUG] Erro ao processar requisição de tabela:', error);
-  //   }
-  // };
-
-  // // Função para consulta local de estoque (comando /stock)
-  // const handleLocalStockQuery = async (searchTerm) => {
-  //   if (!state.currentChatId || !state.currentUser) return;
-
-  //   // Adiciona mensagem informando que está consultando
-  //   const consultingMessage = {
-  //     senderId: 'Sistema (Teste Local)',
-  //     senderName: 'Sistema (Teste Local)',
-  //     text: `Consultando estoque para: "${searchTerm}"...`,
-  //     urgent: false,
-  //     timestamp: Date.now(),
-  //   };
-
-  //   const msgRef = ref(
-  //     firebaseDb,
-  //     `${basePath}/messages/${state.currentChatId}`,
-  //   );
-  //   await push(msgRef, consultingMessage);
-
-  //   try {
-  //     let resultsByStore = {};
-  //     const searchAll = true; // Por padrão, busca em todas as lojas
-
-  //     if (searchAll) {
-  //       // Busca todos os usuários/lojas
-  //       const usersSnapshot = await get(ref(firebaseDb, `${basePath}/users`));
-  //       const allStores = Object.keys(usersSnapshot.val() || {});
-
-  //       for (const store of allStores) {
-  //         const firebirdConfig = getFirebirdConfigForStore(store);
-  //         if (window.electronAPI?.queryFirebird) {
-  //           const result = await window.electronAPI.queryFirebird(
-  //             firebirdConfig,
-  //             searchTerm,
-  //           );
-  //           resultsByStore[store] =
-  //             result.success && result.data ? result.data : [];
-  //         } else {
-  //           resultsByStore[store] = [];
-  //         }
-  //       }
-  //     } else {
-  //       // Busca apenas na loja atual
-  //       const firebirdConfig = getFirebirdConfig();
-  //       if (window.electronAPI?.queryFirebird) {
-  //         const result = await window.electronAPI.queryFirebird(
-  //           firebirdConfig,
-  //           searchTerm,
-  //         );
-  //         resultsByStore[state.currentUser] =
-  //           result.success && result.data ? result.data : [];
-  //       } else {
-  //         resultsByStore[state.currentUser] = [];
-  //       }
-  //     }
-
-  //     // Monta o resultado
-  //     let resultText = '';
-  //     for (const [store, items] of Object.entries(resultsByStore)) {
-  //       resultText += `<div style="margin-bottom:16px;"><b>Loja: ${store}</b><ul style="list-style-type: disc; margin-left: 20px;">`;
-  //       if (items.length > 0) {
-  //         items.forEach((p) => {
-  //           resultText += `<li>
-  //                               <b>${p.PRODUTO || 'N/A'}</b> (ID: ${p.CODIGO || 'N/A'}) - Estoque: ${p.ESTOQUEATUAL || 0} - Preço: R$ ${p.PRECOVENDA || 0}
-  //                           </li>`;
-  //         });
-  //       } else {
-  //         resultText += `<li>Nenhum resultado encontrado.</li>`;
-  //       }
-  //       resultText += '</ul></div>';
-  //     }
-
-  //     // Adiciona mensagem com resultado
-  //     const resultMessage = {
-  //       senderId: 'Sistema (Teste Local)',
-  //       senderName: 'Sistema (Teste Local)',
-  //       text: resultText,
-  //       urgent: false,
-  //       timestamp: Date.now(),
-  //     };
-
-  //     await push(msgRef, resultMessage);
-  //   } catch (error) {
-  //     console.error('[DEBUG] Erro na consulta de estoque local:', error);
-
-  //     // Adiciona mensagem de erro
-  //     const errorMessage = {
-  //       senderId: 'Sistema (Teste Local)',
-  //       senderName: 'Sistema (Teste Local)',
-  //       text: `Ocorreu um erro grave ao consultar o estoque local: ${error.message}`,
-  //       urgent: true,
-  //       timestamp: Date.now(),
-  //     };
-
-  //     await push(msgRef, errorMessage);
-  //   }
-  // };
-
   // Função para abrir chat
 
   const openChat = (chatId, chatName) => {
@@ -427,29 +211,6 @@ export const ChatProvider = ({ children }) => {
   const sendMessage = async (text, isUrgent = false) => {
     if (!text || !state.currentChatId || !state.currentUser) return;
 
-    // Intercepta comando /stock
-    // if (text.startsWith('/stock ')) {
-    //   const searchTerm = text.substring(7).trim();
-    //   if (searchTerm) {
-    //     await handleLocalStockQuery(searchTerm);
-    //   } else {
-    //        senderId: 'Sistema',
-    //    const errorMessage = {
-    //       senderName: 'Sistema',
-    //       text: 'Por favor, forneça um termo para a busca. Ex: /stock sabonete',
-    //       urgent: true,
-    //       timestamp: Date.now(),
-    //     };
-
-    //     const msgRef = ref(
-    //       firebaseDb,
-    //       `${basePath}/messages/${state.currentChatId}`,
-    //     );
-    //     await push(msgRef, errorMessage);
-    //   }
-    //   return;
-    // }
-
     const msgRef = ref(
       firebaseDb,
       `${basePath}/messages/${state.currentChatId}`,
@@ -470,6 +231,33 @@ export const ChatProvider = ({ children }) => {
     // Se urgente, cria notificação
     if (isUrgent) {
       await createUrgentNotification(state.currentChatId);
+    }
+  };
+
+  // Envia mensagem para Chat especifico
+  const sendMessageChat = async (text, isUrgent = false, chatId) => {
+    if (!text || !state.currentChatId || !state.currentUser) return;
+
+    const msgRef = ref(
+      firebaseDb,
+      `${basePath}/messages/${chatId}`,
+    );
+    const newMsg = {
+      senderId: state.currentUser,
+      senderName: state.currentUser,
+      text,
+      urgent: isUrgent,
+      timestamp: serverTimestamp(),
+    };
+
+    await push(msgRef, newMsg);
+
+    // Incrementa contador de não lidas
+    await incrementUnreadCount(chatId);
+
+    // Se urgente, cria notificação
+    if (isUrgent) {
+      await createUrgentNotification(chatId);
     }
   };
 
@@ -611,6 +399,7 @@ export const ChatProvider = ({ children }) => {
     handleLogin,
     openChat,
     sendMessage,
+    sendMessageChat,
     openStockQuery,
     openManagement,
     updateTypingStatus,
