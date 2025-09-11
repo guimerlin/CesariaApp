@@ -12,6 +12,10 @@ import { HashRouter as Router, Route, Routes } from 'react-router-dom';
 import UpdateModal from './components/common/UpdateModal';
 import RequestsModal from './components/common/RequestsModal'; // Import RequestsModal
 import RequestsResponseModal from './components/common/RequestsResponseModal'; // Import RequestsModal
+import Guide from './pages/Guide';
+import Radio from './pages/Radio';
+
+
 
 const AppContent = () => {
   const {
@@ -246,7 +250,7 @@ const AppContent = () => {
   }, [handleLogin, currentUser]);
 
   return (
-    <div className="flex h-screen flex-col bg-gray-50 text-gray-800">
+    <div className="flex flex-col h-screen flex-col bg-gray-50 text-gray-800">
       <LoginScreen isVisible={!currentUser} onLogin={handleLogin} />
 
       {currentUser && (
@@ -277,6 +281,8 @@ const AppContent = () => {
             {/* Outras rotas serão implementadas pelo usuário */}
             <Route path="/stock" element={<Search />} />
             <Route path="/management" element={<Management />} />
+            <Route path="/guide" element={<Guide />} />
+            <Route path="/radio" element={<Radio />} />
           </Routes>
           <TaskBar />
         </div>
