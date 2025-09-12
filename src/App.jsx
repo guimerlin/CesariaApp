@@ -15,8 +15,6 @@ import RequestsResponseModal from './components/common/RequestsResponseModal'; /
 import Guide from './pages/Guide';
 import Radio from './pages/Radio';
 
-
-
 const AppContent = () => {
   const {
     currentUser,
@@ -250,7 +248,7 @@ const AppContent = () => {
   }, [handleLogin, currentUser]);
 
   return (
-    <div className="flex flex-col h-screen flex-col bg-gray-50 text-gray-800">
+    <div className="flex h-screen flex-col bg-gray-50 text-gray-800">
       <LoginScreen isVisible={!currentUser} onLogin={handleLogin} />
 
       {currentUser && (

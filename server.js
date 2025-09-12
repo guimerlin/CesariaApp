@@ -5,11 +5,10 @@ import { fileURLToPath } from 'url';
 import { Buffer } from 'buffer';
 import fs from 'fs/promises';
 
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const PASSW = "Jk$8@zL!v9qY7#pW"
+const PASSW = 'Jk$8@zL!v9qY7#pW';
 const app = express();
 let resultado;
 
@@ -219,12 +218,16 @@ function startServer(PORT, mainWindow, alertFunctions) {
 
   app.get('/alert/start', async (req, res) => {
     alertFunctions.startSoundAlert();
-    res.status(200).json({ success: true, message: 'Alerta enviado com sucesso.'})
+    res
+      .status(200)
+      .json({ success: true, message: 'Alerta enviado com sucesso.' });
   });
 
   app.get('/alert/stop', async (req, res) => {
     alertFunctions.stopSoundAlert();
-    res.status(200).json({ success: true, message: 'Alerta parado com sucesso.'})
+    res
+      .status(200)
+      .json({ success: true, message: 'Alerta parado com sucesso.' });
   });
 
   /*
@@ -450,10 +453,18 @@ ORDER BY c.NOME;`;
       VALIDAR CORPO DA REQUISIÇÃO
       */
 
-      if (!userCode || !senha || !codigoProduto || !quantity) {
+      if (!userCode || !senha || !codigoProduto) {
         return res.status(400).json({
           success: false,
           message: 'Todos os campos são obrigatórios no corpo da requisição',
+        });
+      }
+
+      if (quantity === null || typeof quantity === 'undefined') {
+        console.log(`O parâmetro '${quantity}' é inválido.`);
+        return res.status(400).json({
+          success: false,
+          message: 'Quantidade: Parametro Invalido.',
         });
       }
 
@@ -684,10 +695,18 @@ ORDER BY c.NOME;`;
   app.post('/transfer', async (req, res) => {
     const { product, amount, storeId, password } = req.body;
 
-    if (!product || !amount || !storeId || !password) {
+    if (!product || !storeId || !password) {
       return res.status(400).json({
         success: false,
         message: 'Todos os campos são obrigatórios.',
+      });
+    }
+
+    if (amount === null || typeof amount === 'undefined') {
+      console.log(`O parâmetro '${amount}' é inválido.`);
+      return res.status(400).json({
+        success: false,
+        message: 'Quantidade: Parametro Invalido.',
       });
     }
 
@@ -708,7 +727,7 @@ ORDER BY c.NOME;`;
         message: 'Erro ao determinar estoque local.',
         data: emEstoque,
       });
-    };
+    }
 
     const novaQuantidade = emEstoque.data[0].ESTOQUEATUAL + amount;
 
